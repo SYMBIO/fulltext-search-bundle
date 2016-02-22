@@ -15,8 +15,7 @@
     "minimum-stability": "stable",
     "require": {
         "fabpot/goutte": "2.*",
-        "zendframework/zendsearch": "2.*",
-        "egeloen/lucene-search-bundle": "~1.0"
+        "egeloen/lucene-search-bundle": "2.0.*"
     },
     "require-dev": {
     },
