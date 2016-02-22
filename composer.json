@@ -12,6 +12,7 @@
             "homepage": "http://www.symbiodigital.com"
         }
     ],
+    "minimum-stability": "stable",
     "require": {
         "fabpot/goutte": "2.*",
         "zendframework/zendsearch": "dev-master",
