@@ -12,10 +12,10 @@
             "homepage": "http://www.symbiodigital.com"
         }
     ],
-    "minimum-stability": "dev",
+    "minimum-stability": "stable",
     "require": {
         "fabpot/goutte": "2.*",
-        "zendframework/zendsearch": "dev-master",
+        "zendframework/zendsearch": "2.*",
         "egeloen/lucene-search-bundle": "~1.0"
     },
     "require-dev": {
