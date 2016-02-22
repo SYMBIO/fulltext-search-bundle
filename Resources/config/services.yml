@@ -1,0 +1,28 @@
+services:
+    symbio_fulltext_search:
+        class: %symbio_fulltext_search.class%
+        arguments: [@kernel]
+
+    symbio_fulltext_search.crawler:
+        class: %symbio_fulltext_search.crawler.class%
+        arguments: [@service_container]
+
+    symbio_fulltext_search.provider.html:
+        class: %symbio_fulltext_search.provider.html.class%
+
+    symbio_fulltext_search.provider.pdf:
+        class: %symbio_fulltext_search.provider.pdf.class%
+
+    symbio_fulltext_search.twig_extension:
+        class: Symbio\FulltextSearchBundle\Twig\FulltextSearchExtension
+        public: false
+        arguments:
+            - @service_container
+        tags:
+            - { name: twig.extension }
+
+    data_collector.search:
+        class: Symbio\FulltextSearchBundle\Profiler\DataCollector\SearchDataCollector
+        arguments: [@symbio_fulltext_search]
+        tags:
+            - { name: data_collector, template: "SymbioFulltextSearchBundle:Profiler:search.html.twig", id: "symbio_fulltext_search" }

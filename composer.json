@@ -1,0 +1,32 @@
+{
+    "name": "symbio/fulltext-search-bundle",
+    "type": "symfony-bundle",
+    "description": "SYMBIO FulltextSearchBundle",
+    "keywords": ["fulltext", "search"],
+    "homepage": "http://www.symbiodigital.com/",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "SYMBIO Developers",
+            "email": "dev@symbiodigital.com",
+            "homepage": "http://www.symbiodigital.com"
+        }
+    ],
+    "require": {
+        "fabpot/goutte": "2.*",
+        "zendframework/zendsearch": "dev-master",
+        "egeloen/lucene-search-bundle": "~1.0"
+    },
+    "require-dev": {
+    },
+    "suggest": {
+    },
+    "autoload": {
+        "psr-4": { "Symbio\\FulltextSearchBundle\\": "" }
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "1.0.x-dev"
+        }
+    }
+}

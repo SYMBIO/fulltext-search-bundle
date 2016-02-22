@@ -1,0 +1,5 @@
+{# specialni polozky pro fulltext kvuli generovani breadcrumbs #}
+{% if app.request.headers.get('User-Agent') == get_parameter('symbio_fulltext_search.user_agent') %}{% spaceless %}
+	<div id="{{ constant('Symbio\\FulltextSearchBundle\\Entity\\Page::PAGE_ID_KEY') }}">{{ page is defined ? page.id : '' }}</div>
+	<div id="{{ constant('Symbio\\FulltextSearchBundle\\Entity\\Page::ROUTE_NAME_KEY') }}">{{ app.request.get('_route') }}</div>
+{% endspaceless %}{% endif %}

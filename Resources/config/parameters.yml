@@ -1,0 +1,5 @@
+parameters:
+    symbio_fulltext_search.class: Symbio\FulltextSearchBundle\Service\Search
+    symbio_fulltext_search.crawler.class: Symbio\FulltextSearchBundle\Service\Crawler
+    symbio_fulltext_search.provider.html.class: Symbio\FulltextSearchBundle\Provider\HtmlProvider
+    symbio_fulltext_search.provider.pdf.class: Symbio\FulltextSearchBundle\Provider\PdfProvider
