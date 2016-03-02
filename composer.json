@@ -12,6 +12,7 @@
             "homepage": "http://www.symbiodigital.com"
         }
     ],
+    "minimum-stability": "RC",
     "require": {
         "fabpot/goutte": "2.*",
         "egeloen/lucene-search-bundle": ">=2.0.1,<2.1"
