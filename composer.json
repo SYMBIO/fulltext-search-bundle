@@ -22,5 +22,10 @@
     },
     "autoload": {
         "psr-4": { "Symbio\\FulltextSearchBundle\\": "" }
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "1.0-dev"
+        }
     }
 }
