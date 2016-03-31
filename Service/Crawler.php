@@ -387,7 +387,7 @@ class Crawler {
      * @param int HTTP status
      */
     protected function setPageStatusStats($status) {
-        if (!is_array($this->pagesStatusStats[$status])) $this->pagesStatusStats = array();
+        if (!is_array($this->pagesStatusStats)) $this->pagesStatusStats = array();
         if (!isset($this->pagesStatusStats[$status])) $this->pagesStatusStats[$status] = 0;
         $this->pagesStatusStats[$status]++;
     }
