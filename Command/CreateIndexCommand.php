@@ -25,7 +25,7 @@ class CreateIndexCommand extends ContainerAwareCommand
 			->addArgument('url', InputArgument::REQUIRED, 'Site to crawl')
 			->addOption('index', null, InputOption::VALUE_OPTIONAL, 'Index name', null)
 			->addOption('depth', null, InputOption::VALUE_OPTIONAL, 'The depth to crawl to (default is all)', false)
-			->addOption('not-clean', null, InputOption::VALUE_NONE, 'Whether to do not clean index')
+			->addOption('do-not-clean', null, InputOption::VALUE_NONE, 'Whether to do not clean index')
 			->setName('symbio:fulltext:create-index')
 			->setDescription('Creates a lucene index for a website')
 		;
@@ -40,7 +40,7 @@ class CreateIndexCommand extends ContainerAwareCommand
 		$url = $input->getArgument('url');
 		$depth = $input->getOption('depth');
 		$indexName = $input->getOption('index');
-		$notClean = $input->getOption('not-clean');
+		$notClean = $input->getOption('do-not-clean');
 
 		$output->writeln(sprintf('Starting from "%s" at %s', $url, date('d.m.Y H:i:s')));
 
