@@ -110,16 +110,17 @@ class Crawler {
         $this->pagesStatusStats = array();
         $this->crawlPages($this->baseUrl, $this->maxDepth);
 
+        $this->log('Crawling finished');
+
+        // create index from pages array
+        $this->indexPages($force);
+
+        // print status codes stats
         $pagesStatusStats = array();
         foreach($this->pagesStatusStats as $statusCode => $statusCount) {
             $pagesStatusStats[] = sprintf('%s: %s', $statusCode, $statusCount);
         }
         $this->log(sprintf('Status codes: '.implode(', ', $pagesStatusStats)));
-
-        $this->log('Crawling finished');
-
-        // create index from pages array
-        $this->indexPages($force);
 
         $this->log('Generating finished');
     }
