@@ -122,49 +122,51 @@ class Crawler {
 
         $this->log(sprintf('Clean index "%s" ...', $this->indexName));
 
-        $index = $this->container->get('ivory_lucene_search')->getIndex($this->indexName);
+        try {
+            $index = $this->container->get('ivory_lucene_search')->getIndex($this->indexName);
+        } catch(\Exception $e) {
+            $index = null;
+        }
 
         $counter = 0;
 
         if (is_object($index) && $index->count()) {
             $this->log('Indexed documents: '.$index->count());
 
-            if (is_object($index) && $index->count()) {
-                foreach(range(0,$index->count()-1) as $documentId) {
-                    if ($index->isDeleted($documentId)) continue;
+            foreach(range(0,$index->count()-1) as $documentId) {
+                if ($index->isDeleted($documentId)) continue;
 
-                    $document = $index->getDocument($documentId);
-                    if (is_object($document) && isset($document->url) && $document->url) {
-                        $client = new Client();
-                        try {
-                            @$crawler = $client->request('GET', $document->url);
-                            $status = $client->getResponse()->getStatus();
-                        } catch(\Exception $e) {
-                            $status = 500;
-                        }
+                $document = $index->getDocument($documentId);
+                if (is_object($document) && isset($document->url) && $document->url) {
+                    $client = new Client();
+                    try {
+                        @$crawler = $client->request('GET', $document->url);
+                        $status = $client->getResponse()->getStatus();
+                    } catch(\Exception $e) {
+                        $status = 500;
+                    }
 
-                        $this->log($status . ($status >= 400 ? ' REMOVE' : '') . ':' . $documentId . ':' . $document->url);
+                    $this->log($status . ($status >= 400 ? ' REMOVE' : '') . ':' . $documentId . ':' . $document->url);
 
-                        if ($status >= 400) {
-                            $index->delete($documentId);
-                            $counter++;
-                        }
-                    } else {
-                        $this->log('410 REMOVE' . ':' . $documentId . ':empty URL');
+                    if ($status >= 400) {
                         $index->delete($documentId);
                         $counter++;
                     }
+                } else {
+                    $this->log('410 REMOVE' . ':' . $documentId . ':empty URL');
+                    $index->delete($documentId);
+                    $counter++;
                 }
             }
+
+            // commit your change
+            $index->commit();
+
+            // if you want you can optimize your index
+            $index->optimize();
         } else {
             $this->log('Indexed documents: 0');
         }
-
-        // commit your change
-        $index->commit();
-
-        // if you want you can optimize your index
-        $index->optimize();
 
         $this->log(sprintf('Cleaning finished with %s removed document', $counter));
     }
@@ -177,7 +179,11 @@ class Crawler {
 
         $this->log(sprintf('Delete index "%s" ...', $this->indexName));
 
-        $index = $this->container->get('ivory_lucene_search')->getIndex($this->indexName);
+        try {
+            $index = $this->container->get('ivory_lucene_search')->getIndex($this->indexName);
+        } catch(\Exception $e) {
+            $index = null;
+        }
 
         $counter = 0;
 
@@ -208,7 +214,11 @@ class Crawler {
 	 * returns index documents count
 	 */
 	public function indexCount() {
-		$index = $this->container->get('ivory_lucene_search')->getIndex($this->indexName);
+        try {
+            $index = $this->container->get('ivory_lucene_search')->getIndex($this->indexName);
+        } catch(\Exception $e) {
+            $index = null;
+        }
 
 		if (is_object($index) && $index->count()) {
 			return $index->count();
@@ -375,7 +385,11 @@ class Crawler {
 	 * @param boolean $force Force to rewrite all documents
 	 */
 	protected function indexPages($force = true) {
-		$index = $this->container->get('ivory_lucene_search')->getIndex($this->indexName);
+        try {
+            $index = $this->container->get('ivory_lucene_search')->getIndex($this->indexName);
+        } catch(\Exception $e) {
+            $index = null;
+        }
 
         $this->log(sprintf('%s index "%s" ...', $force ? 'Create' : 'Refresh', $this->indexName));
 
