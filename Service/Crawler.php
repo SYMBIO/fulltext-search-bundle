@@ -12,65 +12,65 @@ use ZendSearch\Lucene\Document;
 use ZendSearch\Lucene\Document\Field;
 
 class Crawler {
-	const USER_AGENT_PARAM = 'user_agent';
+    const USER_AGENT_PARAM = 'user_agent';
     const MENU_SECTIONS_PARAM = 'menu_sections';
-	const BODY_SECTIONS_PARAM = 'body_sections';
-	const TITLE_TAGS_PARAM = 'title_tags';
-	const TITLE_CLASS_PARAM = 'title_class';
-	const DEFAULT_IMAGE_PARAM = 'default_image';
-	const DEFAULT_INDEX_PARAM = 'default_index';
-	const BOOST_PARAM = 'boost';
+    const BODY_SECTIONS_PARAM = 'body_sections';
+    const TITLE_TAGS_PARAM = 'title_tags';
+    const TITLE_CLASS_PARAM = 'title_class';
+    const DEFAULT_IMAGE_PARAM = 'default_image';
+    const DEFAULT_INDEX_PARAM = 'default_index';
+    const BOOST_PARAM = 'boost';
     const LINK_SELECTOR_PARAM = 'link_selector';
-	const PAGE_ID_PARAM = 'page_id';
-	const ROUTE_NAME_PARAM = 'route_name';
+    const PAGE_ID_PARAM = 'page_id';
+    const ROUTE_NAME_PARAM = 'route_name';
 
-	protected $baseUrl;
-	protected $protocol;
-	protected $host;
+    protected $baseUrl;
+    protected $protocol;
+    protected $host;
 
-	protected $maxDepth;
-	protected $indexName;
+    protected $maxDepth;
+    protected $indexName;
 
-	protected $container;
-	protected $logger;
+    protected $container;
+    protected $logger;
 
-	protected $parameters;
+    protected $parameters;
 
-	protected $pages;
+    protected $pages;
 
     protected $bodyLinksXPath;
 
-	public function __construct(ContainerInterface $container) {
-		$this->parameters = array(
-			self::USER_AGENT_PARAM => $container->getParameter('symbio_fulltext_search.'.self::USER_AGENT_PARAM),
-			self::TITLE_CLASS_PARAM => $container->getParameter('symbio_fulltext_search.'.self::TITLE_CLASS_PARAM),
-			self::DEFAULT_IMAGE_PARAM => $container->getParameter('symbio_fulltext_search.'.self::DEFAULT_IMAGE_PARAM),
-			self::DEFAULT_INDEX_PARAM => $container->getParameter('symbio_fulltext_search.'.self::DEFAULT_INDEX_PARAM),
-			self::PAGE_ID_PARAM => $container->getParameter('symbio_fulltext_search.'.self::PAGE_ID_PARAM),
-			self::ROUTE_NAME_PARAM => $container->getParameter('symbio_fulltext_search.'.self::ROUTE_NAME_PARAM),
+    public function __construct(ContainerInterface $container) {
+        $this->parameters = array(
+            self::USER_AGENT_PARAM => $container->getParameter('symbio_fulltext_search.'.self::USER_AGENT_PARAM),
+            self::TITLE_CLASS_PARAM => $container->getParameter('symbio_fulltext_search.'.self::TITLE_CLASS_PARAM),
+            self::DEFAULT_IMAGE_PARAM => $container->getParameter('symbio_fulltext_search.'.self::DEFAULT_IMAGE_PARAM),
+            self::DEFAULT_INDEX_PARAM => $container->getParameter('symbio_fulltext_search.'.self::DEFAULT_INDEX_PARAM),
+            self::PAGE_ID_PARAM => $container->getParameter('symbio_fulltext_search.'.self::PAGE_ID_PARAM),
+            self::ROUTE_NAME_PARAM => $container->getParameter('symbio_fulltext_search.'.self::ROUTE_NAME_PARAM),
             self::MENU_SECTIONS_PARAM => $container->getParameter('symbio_fulltext_search.'.self::MENU_SECTIONS_PARAM),
-			self::BODY_SECTIONS_PARAM => $container->getParameter('symbio_fulltext_search.'.self::BODY_SECTIONS_PARAM),
-			self::TITLE_TAGS_PARAM => $container->getParameter('symbio_fulltext_search.'.self::TITLE_TAGS_PARAM),
-			self::BOOST_PARAM => $container->getParameter('symbio_fulltext_search.'.self::BOOST_PARAM),
+            self::BODY_SECTIONS_PARAM => $container->getParameter('symbio_fulltext_search.'.self::BODY_SECTIONS_PARAM),
+            self::TITLE_TAGS_PARAM => $container->getParameter('symbio_fulltext_search.'.self::TITLE_TAGS_PARAM),
+            self::BOOST_PARAM => $container->getParameter('symbio_fulltext_search.'.self::BOOST_PARAM),
             self::LINK_SELECTOR_PARAM => $container->getParameter('symbio_fulltext_search.'.self::LINK_SELECTOR_PARAM),
-		);
+        );
 
-		$this->container = $container;
+        $this->container = $container;
 
         // assemble body links XPath array
         $linkSelector = $this->parameters[self::LINK_SELECTOR_PARAM];
         $this->bodyLinksXPath = array_map(function($sectionSelector) use ($linkSelector) {
             return $sectionSelector.'//'.$linkSelector;
         }, $this->parameters[self::BODY_SECTIONS_PARAM]);
-	}
+    }
 
-	/**
-	 * initiate the crawling mechanism on all links
-	 * @param string $baseUrl URL to crawl
-	 * @param integer $maxDepth Maximal depth of crawling
+    /**
+     * initiate the crawling mechanism on all links
+     * @param string $baseUrl URL to crawl
+     * @param integer $maxDepth Maximal depth of crawling
      * @param boolean $force Force to rewrite all documents
-	 */
-	public function createIndex($baseUrl, $maxDepth = false, $force = true, $clean = true) {
+     */
+    public function createIndex($baseUrl, $maxDepth = false, $force = true, $clean = true) {
         \error_reporting(E_ALL & ~E_NOTICE);
 
         // first remove from index all non-existing or exhausted pages
@@ -82,13 +82,13 @@ class Crawler {
 
         // http protocol not included, prepend it to the base url
         if (strpos($baseUrl, 'http') === false) {
-			$baseUrl = 'http://' . $baseUrl;
-		}
+            $baseUrl = 'http://' . $baseUrl;
+        }
 
-		$this->baseUrl = $baseUrl;
-		$this->protocol = substr($baseUrl, 0, strpos($baseUrl, ':'));
-		$host = strtr($baseUrl, array('http://'=>'','https://'=>''));
-		$this->host = strpos($host, '/') !== false ? substr($host, 0, strpos($host, '/')) : $host;
+        $this->baseUrl = $baseUrl;
+        $this->protocol = substr($baseUrl, 0, strpos($baseUrl, ':'));
+        $host = strtr($baseUrl, array('http://'=>'','https://'=>''));
+        $this->host = strpos($host, '/') !== false ? substr($host, 0, strpos($host, '/')) : $host;
 
         $this->pages = array();
         $this->maxDepth = $maxDepth;
@@ -104,20 +104,20 @@ class Crawler {
         );
 
         // crawl website into pages array
-        $this->log('Crawling stared ...');
+        $this->log('Crawling started ...');
         $this->crawlPages($this->baseUrl, $this->maxDepth);
         $this->log('Crawling finished');
 
-		// create index from pages array
+        // create index from pages array
         $this->indexPages($force);
 
         $this->log('Generating finished');
-	}
+    }
 
-	/**
-	 * index cleaning - remove non existing or corrupted pages
-	 */
-	public function cleanIndex() {
+    /**
+     * index cleaning - remove non existing or corrupted pages
+     */
+    public function cleanIndex() {
         \error_reporting(E_ALL & ~E_NOTICE);
 
         $this->log(sprintf('Clean index "%s" ...', $this->indexName));
@@ -179,82 +179,67 @@ class Crawler {
 
         $this->log(sprintf('Delete index "%s" ...', $this->indexName));
 
+        $luceneSearch = $this->container->get('ivory_lucene_search');
+
         try {
-            $index = $this->container->get('ivory_lucene_search')->getIndex($this->indexName);
+            $index = $luceneSearch->getIndex($this->indexName);
         } catch(\Exception $e) {
             $index = null;
         }
 
-        $counter = 0;
-
-        if (is_object($index) && $index->count()) {
-            $this->log('Indexed documents: '.$index->count());
-
-            if (is_object($index) && $index->count()) {
-                foreach(range(0,$index->count()-1) as $documentId) {
-                    if ($index->isDeleted($documentId)) continue;
-                    $index->delete($documentId);
-                    $counter++;
-                }
-            }
+        if (is_object($index)) {
+            $luceneSearch->removeIndex($this->indexName, true);
+            $this->log('Deleting finished');
         } else {
-            $this->log('Indexed documents: 0');
+            $this->log('Nothing to delete, index doesn\'t exists');
         }
-
-        // commit your change
-        $index->commit();
-
-        // if you want you can optimize your index
-        $index->optimize();
-
-        $this->log(sprintf('Deleting finished with %s removed document', $counter));
     }
 
-	/**
-	 * returns index documents count
-	 */
-	public function indexCount() {
+    /**
+     * returns index documents count
+     */
+    public function indexCount() {
         try {
             $index = $this->container->get('ivory_lucene_search')->getIndex($this->indexName);
         } catch(\Exception $e) {
             $index = null;
         }
 
-		if (is_object($index) && $index->count()) {
-			return $index->count();
-		} else {
-			return 0;
-		}
-	}
+        if (is_object($index) && $index->count()) {
+            return $index->count();
+        } else {
+            return 0;
+        }
+    }
 
-	/**
-	 * crawling single url after checking the depth value
-	 * @param string $urlToTraverse
-	 * @param int $depth
-	 */
-	protected function crawlPages($urlToTraverse, $depth) {
-		if (!$urlToTraverse) return;
+    /**
+     * crawling single url after checking the depth value
+     * @param string $urlToTraverse
+     * @param int $depth
+     */
+    protected function crawlPages($urlToTraverse, $depth) {
+        if (!$urlToTraverse) return;
 
-		try {
-			$client = new Client();
-			$client->setHeader('User-Agent', $this->parameters['user_agent']);
+        try {
+            $client = new Client();
+            $client->setHeader('User-Agent', $this->parameters['user_agent']);
 
-			try {
-				$crawler = $client->request('GET', $urlToTraverse);
-				$statusCode = $client->getResponse()->getStatus();
-			} catch(\Exception $e) {
-				$statusCode = 400;
-			}
+            try {
+                $crawler = $client->request('GET', $urlToTraverse);
+                $statusCode = $client->getResponse()->getStatus();
+            } catch(\Exception $e) {
+                $statusCode = 400;
+            }
 
-			$this->log(sprintf("%s: %s", $statusCode, $urlToTraverse));
+            $this->log(sprintf("%s: %s", $statusCode, $urlToTraverse));
 
-			if ($statusCode >= 400) {
-				return;
-			}
+            if ($statusCode >= 400) {
+                return;
+            }
 
-			if (!isset($this->pages[$urlToTraverse])) $this->pages[$urlToTraverse] = array();
+            if (!isset($this->pages[$urlToTraverse])) $this->pages[$urlToTraverse] = array();
 
-			$this->pages[$urlToTraverse]['status_code'] = $statusCode;
+            $this->pages[$urlToTraverse]['status_code'] = $statusCode;
 
             $contentType = $client->getResponse()->getHeader('Content-Type');
             if (strpos($contentType, ';') !== false) {
@@ -279,14 +264,14 @@ class Crawler {
                     }
                     break;
             }
-		} catch (CurlException $e) {
-			error_log('CURL exception: ' . $urlToTraverse);
-			$this->pages[$urlToTraverse]['status_code'] = '500';
-		} catch (\Exception $e) {
-			error_log('error retrieving data from link: '.$urlToTraverse.' ('.$e->getMessage().') ');
-			$this->pages[$urlToTraverse]['status_code'] = '500';
-		}
-	}
+        } catch (CurlException $e) {
+            error_log('CURL exception: ' . $urlToTraverse);
+            $this->pages[$urlToTraverse]['status_code'] = '500';
+        } catch (\Exception $e) {
+            error_log('error retrieving data from link: '.$urlToTraverse.' ('.$e->getMessage().') ');
+            $this->pages[$urlToTraverse]['status_code'] = '500';
+        }
+    }
 
     /**
      * extracting all <a> tags in the crawled document,
@@ -380,194 +365,219 @@ class Crawler {
         }
     }
 
-	/**
-	 * starts index creating
-	 * @param boolean $force Force to rewrite all documents
-	 */
-	protected function indexPages($force = true) {
+    /**
+     * starts index creating
+     * @param boolean $force Force to rewrite all documents
+     */
+    protected function indexPages($force = true) {
+        $luceneSearch = $this->container->get('ivory_lucene_search');
+
         try {
-            $index = $this->container->get('ivory_lucene_search')->getIndex($this->indexName);
+            $index = $luceneSearch->getIndex($this->indexName);
         } catch(\Exception $e) {
             $index = null;
         }
 
+        if (!$index) {
+            $indexPath = $this->container->get('kernel')->getRootDir().'/../data/search';
+            if (!file_exists($indexPath)) {
+                mkdir($indexPath, 0777, true);
+            }
+
+            $luceneSearch->setIndex(
+                $this->indexName,
+                $indexPath,
+                'ZendSearch\Lucene\Analysis\Analyzer\Common\Text\CaseInsensitive',
+                10,
+                PHP_INT_MAX,
+                10,
+                0777,
+                false,
+                'UTF-8'
+            );
+
+            $index = $luceneSearch->getIndex($this->indexName);
+        }
+
         $this->log(sprintf('%s index "%s" ...', $force ? 'Create' : 'Refresh', $this->indexName));
 
-		$counter = 0;
+        $counter = 0;
 
-        foreach ($this->pages as $url => $page) {
-			if (!$this->isPageValid($url, $page)) continue;
+        if (is_object($index)) {
+            foreach ($this->pages as $url => $page) {
+                if (!$this->isPageValid($url, $page)) continue;
 
-			// find URL documents
-            $hits = $index->find('url:"'.$url.'"');
-			if ($hits && is_array($hits) && count($hits) == 0) {
-				$hits = false;
-			}
-
-			// delete all the URL documents if forced fetching
-            if ($force && $hits) {
-				// there might be more than one in the index
-				foreach ($hits as $hit) {
-					if ($hit->id) $index->delete($hit->id);
-				}
-			}
-
-			$this->log($url);
-
-			// index document if URL document doesnt exists or forced fetching
-            if (!$hits || $force) {
-				try {
-                    $index->addDocument($this->createDocument($url, $page));
-                    $counter++;
-                } catch(\Exception $e) {
-                    $this->log(sprintf('Indexing URL %s failed', $url));
+                // find URL documents
+                $hits = $index->find('url:"'.$url.'"');
+                if ($hits && is_array($hits) && count($hits) == 0) {
+                    $hits = false;
                 }
-			}
-		}
 
-		// commit your change
-		$index->commit();
+                // delete all the URL documents if forced fetching
+                if ($force && $hits) {
+                    // there might be more than one in the index
+                    foreach ($hits as $hit) {
+                        if ($hit->id) $index->delete($hit->id);
+                    }
+                }
 
-		// if you want you can optimize your index
-		$index->optimize();
+                $this->log($url);
+
+                // index document if URL document doesnt exists or forced fetching
+                if (!$hits || $force) {
+                    try {
+                        $index->addDocument($this->createDocument($url, $page));
+                        $counter++;
+                    } catch(\Exception $e) {
+                        $this->log(sprintf('Indexing URL %s failed', $url));
+                    }
+                }
+            }
+
+            // commit your change
+            $index->commit();
+
+            // if you want you can optimize your index
+            $index->optimize();
+        }
 
         $this->log(sprintf('%s finished with %s documents', $force ? 'Creating' : 'Refreshing', $counter));
-	}
+    }
 
-	/**
-	 * create document from configured fields within extracted data
-	 * @param string $url
-	 * @param array $page
-	 * @return Document
-	 */
-	protected function createDocument($url, $page) {
-		$document = new Document();
+    /**
+     * create document from configured fields within extracted data
+     * @param string $url
+     * @param array $page
+     * @return Document
+     */
+    protected function createDocument($url, $page) {
+        $document = new Document();
 
-		if (!isset($page['status_code'])) {
-			$page['status_code'] = 000;//tmp
-		}
+        if (!isset($page['status_code'])) {
+            $page['status_code'] = 000;//tmp
+        }
 
-		setlocale(LC_ALL, "cs_CZ.UTF-8");
+        setlocale(LC_ALL, "cs_CZ.UTF-8");
 
-		$document->addField(Field::keyword('url', $url));
+        $document->addField(Field::keyword('url', $url));
 
-		// ancestor URLs to search by URL
-		$urlParts = parse_url($url);
-		if (isset($urlParts['path']) && $urlParts['path'] && strlen($urlParts['path']) > 1) {
-			$uri = $urlParts['path'];
-			$uris = array($uri);
-			do {
-				$uri = substr($uri, 0, strrpos($uri, '/'));
-				$uris[] = $uri;
-			} while(strrpos($uri, '/') > 1);
-			$document->addField(Field::text(Page::URIS_KEY, implode(' ', $uris)));
-		}
+        // ancestor URLs to search by URL
+        $urlParts = parse_url($url);
+        if (isset($urlParts['path']) && $urlParts['path'] && strlen($urlParts['path']) > 1) {
+            $uri = $urlParts['path'];
+            $uris = array($uri);
+            do {
+                $uri = substr($uri, 0, strrpos($uri, '/'));
+                $uris[] = $uri;
+            } while(strrpos($uri, '/') > 1);
+            $document->addField(Field::text(Page::URIS_KEY, implode(' ', $uris)));
+        }
 
-		foreach(array(Page::TITLE_KEY,Page::DESCRIPTION_KEY,Page::BODY_KEY,Page::IMAGE_KEY) as $fieldName) {
-			$fieldValue = isset($page[$fieldName]) ? $page[$fieldName] : '';
-			switch($fieldName) {
-				case Page::TITLE_KEY:
-				case Page::DESCRIPTION_KEY:
+        foreach(array(Page::TITLE_KEY,Page::DESCRIPTION_KEY,Page::BODY_KEY,Page::IMAGE_KEY) as $fieldName) {
+            $fieldValue = isset($page[$fieldName]) ? $page[$fieldName] : '';
+            switch($fieldName) {
+                case Page::TITLE_KEY:
+                case Page::DESCRIPTION_KEY:
                 case Page::BODY_KEY:
                     $field = Field::text($fieldName, $fieldValue);
                     // translit
                     $fieldTranslit = Field::text($fieldName.'_translit', str_replace("'", '', iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $fieldValue)));
                     $fieldTranslit->boost = isset($this->parameters[self::BOOST_PARAM][$fieldName]) ? $this->parameters[self::BOOST_PARAM][$fieldName] : 1.25;
                     $document->addField($fieldTranslit);
-                break;
-				case Page::IMAGE_KEY:
-					$field = Field::unIndexed($fieldName, $fieldValue);
-					break;
-				default:
+                    break;
+                case Page::IMAGE_KEY:
+                    $field = Field::unIndexed($fieldName, $fieldValue);
+                    break;
+                default:
                     $translitValue = str_replace("'", '', iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $fieldValue));
                     $field = Field::text($fieldName, $fieldValue.($translitValue != $fieldValue ? ' '.$translitValue : ''));
-			}
-			$field->boost = isset($this->parameters[self::BOOST_PARAM][$fieldName]) ? $this->parameters[self::BOOST_PARAM][$fieldName] : 1.25;
-			$document->addField($field);
-		}
+            }
+            $field->boost = isset($this->parameters[self::BOOST_PARAM][$fieldName]) ? $this->parameters[self::BOOST_PARAM][$fieldName] : 1.25;
+            $document->addField($field);
+        }
 
-		// title tags as configured i.e. h1, h2, ...
-		foreach($this->parameters[self::TITLE_TAGS_PARAM] as $fieldName) {
-			$fieldValue = Page::hasHeadlineType($page, $fieldName) ? Page::getHeadline($page, $fieldName) : '';
+        // title tags as configured i.e. h1, h2, ...
+        foreach($this->parameters[self::TITLE_TAGS_PARAM] as $fieldName) {
+            $fieldValue = Page::hasHeadlineType($page, $fieldName) ? Page::getHeadline($page, $fieldName) : '';
 
             $field = Field::text($fieldName, $fieldValue);
-			$field->boost = isset($this->parameters[self::BOOST_PARAM][$fieldName]) ? $this->parameters[self::BOOST_PARAM][$fieldName] : 1;
-			$document->addField($field);
+            $field->boost = isset($this->parameters[self::BOOST_PARAM][$fieldName]) ? $this->parameters[self::BOOST_PARAM][$fieldName] : 1;
+            $document->addField($field);
 
             $fieldTranslit = Field::text($fieldName.'_translit', str_replace("'", '', iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $fieldValue)));
             $fieldTranslit->boost = isset($this->parameters[self::BOOST_PARAM][$fieldName]) ? $this->parameters[self::BOOST_PARAM][$fieldName] : 1.25;
             $document->addField($fieldTranslit);
-		}
+        }
 
-		// page ID if selector defined
-		if ($this->parameters[self::PAGE_ID_PARAM]) {
-			$fieldValue = isset($page[Page::PAGE_ID_KEY]) ? $page[Page::PAGE_ID_KEY] : '';
-			$field = Field::unIndexed(Page::PAGE_ID_KEY, $fieldValue);
-			$document->addField($field);
-		}
+        // page ID if selector defined
+        if ($this->parameters[self::PAGE_ID_PARAM]) {
+            $fieldValue = isset($page[Page::PAGE_ID_KEY]) ? $page[Page::PAGE_ID_KEY] : '';
+            $field = Field::unIndexed(Page::PAGE_ID_KEY, $fieldValue);
+            $document->addField($field);
+        }
 
-		// route name if selector defined
-		if ($this->parameters[self::ROUTE_NAME_PARAM]) {
-			$fieldValue = isset($page[Page::ROUTE_NAME_KEY]) ? $page[Page::ROUTE_NAME_KEY] : '';
-			$field = Field::unIndexed(Page::ROUTE_NAME_KEY, $fieldValue);
-			$document->addField($field);
-		}
+        // route name if selector defined
+        if ($this->parameters[self::ROUTE_NAME_PARAM]) {
+            $fieldValue = isset($page[Page::ROUTE_NAME_KEY]) ? $page[Page::ROUTE_NAME_KEY] : '';
+            $field = Field::unIndexed(Page::ROUTE_NAME_KEY, $fieldValue);
+            $document->addField($field);
+        }
 
-		return $document;
-	}
+        return $document;
+    }
 
-	/**
-	 * checks the uri if can be crawled or not
-	 * in order to prevent links like "javascript:void(0)" or "#something" from being crawled again
-	 * @param string $uri
-	 * @return boolean
-	 */
-	protected function checkIfCrawlable($uri) {
-		if (empty($uri)) return false;
+    /**
+     * checks the uri if can be crawled or not
+     * in order to prevent links like "javascript:void(0)" or "#something" from being crawled again
+     * @param string $uri
+     * @return boolean
+     */
+    protected function checkIfCrawlable($uri) {
+        if (empty($uri)) return false;
 
-		$stop_links = array(//returned deadlinks
-			'@^javascript\:void\(0\)$@',
-			'@^#.*@',
-		);
+        $stop_links = array(//returned deadlinks
+            '@^javascript\:void\(0\)$@',
+            '@^#.*@',
+        );
 
-		foreach ($stop_links as $ptrn) {
-			if (preg_match($ptrn, $uri)) {
-				return false;
-			}
-		}
+        foreach ($stop_links as $ptrn) {
+            if (preg_match($ptrn, $uri)) {
+                return false;
+            }
+        }
 
-		return true;
-	}
+        return true;
+    }
 
-	/**
-	 * normalize link before visiting it
-	 * currently just remove url hash from the string
-	 * @param string $uri
-	 * @return string
-	 */
-	protected function normalizeLink($url) {
-		$url = preg_replace('@#.*$@', '', $url);
-		return $url;
-	}
+    /**
+     * normalize link before visiting it
+     * currently just remove url hash from the string
+     * @param string $uri
+     * @return string
+     */
+    protected function normalizeLink($url) {
+        $url = preg_replace('@#.*$@', '', $url);
+        return $url;
+    }
 
-	/**
-	 * check if the link leads to external site or not
-	 * @param string $url
-	 * @return boolean
-	 */
-	protected function isPageExternal($url) {
-		return (strpos($url, 'http://') !== false || strpos($url, 'https://') !== false) && strpos($url, 'http://'.$this->host) === false && strpos($url, 'https://'.$this->host) === false;
-	}
+    /**
+     * check if the link leads to external site or not
+     * @param string $url
+     * @return boolean
+     */
+    protected function isPageExternal($url) {
+        return (strpos($url, 'http://') !== false || strpos($url, 'https://') !== false) && strpos($url, 'http://'.$this->host) === false && strpos($url, 'https://'.$this->host) === false;
+    }
 
-	/**
-	 * check if the page has basic properties
-	 * @param string $url
-	 * @param array $page
-	 * @return boolean
-	 */
-	protected function isPageValid($url, $page) {
-		return $url && $url != '#' && isset($page[Page::TITLE_KEY]) && $page[Page::TITLE_KEY] && $page[Page::DESCRIPTION_KEY];
-	}
+    /**
+     * check if the page has basic properties
+     * @param string $url
+     * @param array $page
+     * @return boolean
+     */
+    protected function isPageValid($url, $page) {
+        return $url && $url != '#' && isset($page[Page::TITLE_KEY]) && $page[Page::TITLE_KEY] && $page[Page::DESCRIPTION_KEY];
+    }
 
     /**
      * set index name
@@ -585,19 +595,19 @@ class Crawler {
         $this->logger = $logger;
     }
 
-	/**
-	 * log message
-	 * @param string $message
-	 * @param boolean $newLine Print new line at the message end
-	 */
-	protected function log($message, $newLine = true) {
-		if ($this->logger) {
-			switch(get_class($this->logger)) {
-				case 'Symfony\Component\Console\Output\BufferedOutput':
-				case 'Symfony\Component\Console\Output\ConsoleOutput':
-					$this->logger->{$newLine?'writeln':'write'}($message);
-					break;
-			}
-		}
-	}
+    /**
+     * log message
+     * @param string $message
+     * @param boolean $newLine Print new line at the message end
+     */
+    protected function log($message, $newLine = true) {
+        if ($this->logger) {
+            switch(get_class($this->logger)) {
+                case 'Symfony\Component\Console\Output\BufferedOutput':
+                case 'Symfony\Component\Console\Output\ConsoleOutput':
+                    $this->logger->{$newLine?'writeln':'write'}($message);
+                    break;
+            }
+        }
+    }
 }
