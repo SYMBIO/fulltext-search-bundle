@@ -37,6 +37,7 @@ class Crawler {
     protected $parameters;
 
     protected $pages;
+    protected $pagesStatusStats;
 
     protected $bodyLinksXPath;
 
@@ -105,7 +106,16 @@ class Crawler {
 
         // crawl website into pages array
         $this->log('Crawling started ...');
+
+        $this->pagesStatusStats = array();
         $this->crawlPages($this->baseUrl, $this->maxDepth);
+
+        $pagesStatusStats = array();
+        foreach($this->pagesStatusStats as $statusCode => $statusCount) {
+            $pagesStatusStats[] = sprintf('%s: %s', $statusCode, $statusCount);
+        }
+        $this->log(sprintf('Status codes: '.implode(', ', $pagesStatusStats)));
+
         $this->log('Crawling finished');
 
         // create index from pages array
@@ -218,7 +228,13 @@ class Crawler {
      * @param int $depth
      */
     protected function crawlPages($urlToTraverse, $depth) {
-        if (!$urlToTraverse) return;
+        if (!$urlToTraverse
+            || (
+                isset($this->pages[$urlToTraverse]) &&
+                isset($this->pages[$urlToTraverse]['visited']) &&
+                $this->pages[$urlToTraverse]['visited']
+            )
+        ) return;
 
         try {
             $client = new Client();
@@ -232,6 +248,7 @@ class Crawler {
             }
 
             $this->log(sprintf("%s: %s", $statusCode, $urlToTraverse));
+            $this->setPageStatusStats($statusCode);
 
             if ($statusCode >= 400) {
                 return;
@@ -363,6 +380,16 @@ class Crawler {
                 $this->crawlPages($this->normalizeLink($links[$url]['absolute_url']), $depth);
             }
         }
+    }
+
+    /**
+     * increase HTTP status stats
+     * @param int HTTP status
+     */
+    protected function setPageStatusStats($status) {
+        if (!is_array($this->pagesStatusStats[$status])) $this->pagesStatusStats = array();
+        if (!isset($this->pagesStatusStats[$status])) $this->pagesStatusStats[$status] = 0;
+        $this->pagesStatusStats[$status]++;
     }
 
     /**
