@@ -22,9 +22,9 @@ abstract class Provider
         $this->parameters = $parameters;
         $this->page = new Page($this->parameters[Crawler::TITLE_TAGS_PARAM]);
 
+        $this->extractHeadlines($crawler, $url);
         $this->extractTitle($crawler, $url);
         $this->extractDescription($crawler, $url);
-        $this->extractHeadlines($crawler, $url);
         $this->extractBody($crawler, $url);
         $this->extractImage($crawler, $url);
         $this->extractPageId($crawler, $url);
