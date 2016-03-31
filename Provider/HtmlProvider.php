@@ -20,7 +20,7 @@ class HtmlProvider extends Provider
             }
         }
 
-        if (!$this->getPage()->hasTitle()) {
+        if (!$this->getPage()->hasTitle() && $this->getPage()->hasHeadline()) {
             $this->setTitleFromHeadlines();
         }
     }
@@ -66,7 +66,7 @@ class HtmlProvider extends Provider
             }
         }
 
-        if (!$this->getPage()->hasTitle()) {
+        if (!$this->getPage()->hasTitle() && $this->getPage()->hasHeadline()) {
             $this->setTitleFromHeadlines();
         }
     }
