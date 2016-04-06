@@ -2,8 +2,6 @@
 
 namespace Symbio\FulltextSearchBundle\Entity;
 
-use Symbio\FulltextSearchBundle\Service\Crawler;
-
 class Page {
     const TITLE_KEY = 'title';
     const DESCRIPTION_KEY = 'description';
@@ -21,7 +19,7 @@ class Page {
     protected $description = array();
     protected $headlines = array();
     protected $body = array();
-    protected $image = array();
+    protected $image;
 
     protected $pageId = '';
     protected $routeName = '';
@@ -163,24 +161,21 @@ class Page {
      * @param string $value
      */
     public function setImage($value) {
-        $this->image[] = $value;
+        $this->image = $value;
     }
     /**
      * has page any image?
      * @return boolean
      */
     public function hasImage() {
-        return count($this->image) > 0;
+        return !empty($this->image);
     }
     /**
      * get image
      * @return string
      */
     public function getImage() {
-        if ($this->hasImage()) {
-            return $this->image[0];
-        }
-        return '';
+        return $this->image;
     }
 
     /**
@@ -226,6 +221,7 @@ class Page {
     }
 
     // STATIC
+
     /**
      * has page any headline by type?
      * @param array page

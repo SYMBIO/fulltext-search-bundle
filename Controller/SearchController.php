@@ -15,20 +15,20 @@ use Symfony\Component\HttpFoundation\Request;
 class SearchController extends Controller
 {
 	/**
-	 * @Route("/search/generate", name="search_index_generate")
+	 * @Route("/search/create", name="search_index_create")
 	 * @Template()
 	 */
-	public function generateIndexAction(Request $request)
+	public function createIndexAction(Request $request)
 	{
 		set_time_limit(0);
 
-		$command = 'symbio:fulltext:generate-index';
+		$command = 'symbio:fulltext:create-index';
 		$url = $request->query->get('url', 'http://'.$_SERVER['HTTP_HOST'].($this->container->getParameter("kernel.environment") == 'dev' ? '/app_dev.php/' : '/'));
 		$depth = $request->query->get('depth', -1);
 		$index = $request->query->get('index', $this->container->getParameter('symbio_fulltext_search.'.Crawler::DEFAULT_INDEX_PARAM));
-		$force = $request->query->get('force', true);
+		$clean = !$request->query->get('dont-clean', false);
 
-		return $this->processIndexOperation($command, $url, $index, $depth, $force);
+		return $this->processIndexOperation($command, $url, $index, $depth, $clean);
 	}
 
 	/**
@@ -43,12 +43,12 @@ class SearchController extends Controller
 		$url = $request->query->get('url', 'http://'.$_SERVER['HTTP_HOST'].($this->container->getParameter("kernel.environment") == 'dev' ? '/app_dev.php/' : '/'));
 		$depth = $request->query->get('depth', -1);
 		$index = $request->query->get('index', $this->container->getParameter('symbio_fulltext_search.'.Crawler::DEFAULT_INDEX_PARAM));
-		$force = $request->query->get('force', false);
+		$clean = !$request->query->get('dont-clean', false);
 
-		return $this->processIndexOperation($command, $url, $index, $depth, $force);
+		return $this->processIndexOperation($command, $url, $index, $depth, $clean);
 	}
 
-	protected function processIndexOperation($command, $url, $index, $depth, $force)
+	protected function processIndexOperation($command, $url, $index, $depth, $clean)
 	{
 		$configuration = array(
 			'command' => $command,
@@ -60,7 +60,9 @@ class SearchController extends Controller
 		if ($index) {
 			$configuration['--index'] = $index;
 		}
-		$configuration['--force'] = $force ? true : false;
+		if (!$clean) {
+			$configuration['--dont-clean'] = true;
+		}
 
 		$input = new ArrayInput($configuration);
 
@@ -77,7 +79,7 @@ class SearchController extends Controller
 		// save output as log file
 		$logFile = $this->get('kernel')->getRootDir().'/../app/logs/search_'.date('YmdHis').'.log';
 		$fp = fopen($logFile, 'w');
-		fwrite($fp, 'Command '.$command.' (HTTP call) at '.date('d.m.Y H:i:s')." with params: url -> $url, depth -> $depth, index -> $index, force -> $force");
+		fwrite($fp, 'Command '.$command.' (HTTP call) at '.date('d.m.Y H:i:s')." with params: url -> $url, depth -> $depth, index -> $index, dont-clean -> ".($clean ? 'false' : 'true'));
 		fwrite($fp, $content);
 		fclose($fp);
 

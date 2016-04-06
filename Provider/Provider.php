@@ -3,13 +3,23 @@
 namespace Symbio\FulltextSearchBundle\Provider;
 
 use Symbio\FulltextSearchBundle\Entity\Page;
+use Symbio\FulltextSearchBundle\Event\EventsManager;
 use Symbio\FulltextSearchBundle\Service\Crawler;
 use Symfony\Component\DomCrawler\Crawler as DomCrawler;
 
 abstract class Provider
 {
     protected $parameters;
+    protected $isExternal;
+
+    protected $eventsManager;
+
     protected $page;
+
+    public function __construct(EventsManager $eventsManager)
+    {
+        $this->eventsManager = $eventsManager;
+    }
 
     /**
      * extract page info
@@ -18,19 +28,29 @@ abstract class Provider
      * @param array $parameters
      * @return array page info
      */
-    public function extract(DomCrawler &$crawler, $url, $parameters = array()) {
+    public function extract(DomCrawler &$crawler, $url, $isExternal, $parameters = array()) {
         $this->parameters = $parameters;
-        $this->page = new Page($this->parameters[Crawler::TITLE_TAGS_PARAM]);
+        $this->isExternal = $isExternal;
 
-        $this->extractTitle($crawler, $url);
-        $this->extractHeadlines($crawler, $url);
-        $this->extractDescription($crawler, $url);
-        $this->extractBody($crawler, $url);
-        $this->extractImage($crawler, $url);
-        $this->extractPageId($crawler, $url);
-        $this->extractRouteName($crawler, $url);
+        if ($this->shouldBeIndexed($crawler, $url)) {
+            $this->page = new Page($this->parameters[Crawler::TITLE_TAGS_PARAM]);
 
-        return $this->getPageInfo();
+            $this->extractTitle($crawler, $url);
+            $this->extractHeadlines($crawler, $url);
+            $this->extractDescription($crawler, $url);
+            $this->extractBody($crawler, $url);
+            $this->extractImage($crawler, $url);
+            $this->extractPageId($crawler, $url);
+            $this->extractRouteName($crawler, $url);
+
+            $this->eventsManager->firePageExtractedEvent($this->getPage());
+
+            return $this->getPageInfo();
+        } else {
+            return array(
+                'dont_index' => true,
+            );
+        }
     }
 
     /**
@@ -48,6 +68,14 @@ abstract class Provider
     public function getPageInfo() {
         return $this->getPage()->toArray();
     }
+
+    /**
+     * check no index flag
+     * @param DomCrawler $crawler
+     * @param string $uri
+     * @return boolean
+     */
+    protected abstract function shouldBeIndexed(DomCrawler &$crawler, $url);
 
     /**
      * extract document title

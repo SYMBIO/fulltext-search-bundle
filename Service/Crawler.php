@@ -21,6 +21,9 @@ class Crawler {
     const DEFAULT_INDEX_PARAM = 'default_index';
     const BOOST_PARAM = 'boost';
     const LINK_SELECTOR_PARAM = 'link_selector';
+    const CRAWL_EXTERNAL_LINKS = 'crawl_external_links';
+    const EXTERNAL_LINKS_DEPTH = 'external_links_depth';
+    const NOINDEX_CLASS_PARAM = 'noindex_class';
     const PAGE_ID_PARAM = 'page_id';
     const ROUTE_NAME_PARAM = 'route_name';
 
@@ -54,6 +57,9 @@ class Crawler {
             self::TITLE_TAGS_PARAM => $container->getParameter('symbio_fulltext_search.'.self::TITLE_TAGS_PARAM),
             self::BOOST_PARAM => $container->getParameter('symbio_fulltext_search.'.self::BOOST_PARAM),
             self::LINK_SELECTOR_PARAM => $container->getParameter('symbio_fulltext_search.'.self::LINK_SELECTOR_PARAM),
+            self::CRAWL_EXTERNAL_LINKS => $container->getParameter('symbio_fulltext_search.'.self::CRAWL_EXTERNAL_LINKS),
+            self::EXTERNAL_LINKS_DEPTH => $container->getParameter('symbio_fulltext_search.'.self::EXTERNAL_LINKS_DEPTH),
+            self::NOINDEX_CLASS_PARAM => $container->getParameter('symbio_fulltext_search.'.self::NOINDEX_CLASS_PARAM),
         );
 
         $this->container = $container;
@@ -88,8 +94,13 @@ class Crawler {
 
         $this->baseUrl = $baseUrl;
         $this->protocol = substr($baseUrl, 0, strpos($baseUrl, ':'));
-        $host = strtr($baseUrl, array('http://'=>'','https://'=>''));
+
+        $host = substr($baseUrl, strlen($this->protocol.'://'));
         $this->host = strpos($host, '/') !== false ? substr($host, 0, strpos($host, '/')) : $host;
+
+        if ($this->baseUrl == $this->protocol.'://'.$this->host) {
+            $this->baseUrl .= '/';
+        }
 
         $this->pages = array();
         $this->maxDepth = $maxDepth;
@@ -267,17 +278,20 @@ class Crawler {
             switch($contentType) {
                 case 'text/html':
                     $provider = $this->container->get('symbio_fulltext_search.provider.html');
-                    $pageInfo = $provider->extract($crawler, $urlToTraverse, $this->parameters);
+                    $pageInfo = $provider->extract($crawler, $urlToTraverse, isset($this->pages[$urlToTraverse]['external_link']) ? $this->pages[$urlToTraverse]['external_link'] : false, $this->parameters);
 
                     $this->pages[$urlToTraverse] = array_merge($this->pages[$urlToTraverse], $pageInfo);
                     $this->pages[$urlToTraverse]['visited'] = true; // mark current url as visited
-
-                    //$this->log(print_r($this->pages[$urlToTraverse],1)); // TODO
 
                     if (!isset($this->pages[$urlToTraverse]['external_link']) || !$this->pages[$urlToTraverse]['external_link']) { // for internal uris, get all links inside
                         $links = $this->extractLinks($crawler, $urlToTraverse);
                         if (count($links)) {
                             $this->crawlChildLinks($links, $depth !== false ? $depth - 1 : false);
+                        }
+                    } elseif ($this->parameters[self::CRAWL_EXTERNAL_LINKS] && $this->parameters[self::EXTERNAL_LINKS_DEPTH] > 0) {
+                        $links = $this->extractLinks($crawler, $urlToTraverse);
+                        if (count($links)) {
+                            $this->crawlChildLinks($links, $this->parameters[self::EXTERNAL_LINKS_DEPTH]);
                         }
                     }
                     break;
@@ -285,9 +299,11 @@ class Crawler {
         } catch (CurlException $e) {
             error_log('CURL exception: ' . $urlToTraverse);
             $this->pages[$urlToTraverse]['status_code'] = '500';
+            $this->pages[$urlToTraverse]['dont_index'] = true;
         } catch (\Exception $e) {
             error_log('error retrieving data from link: '.$urlToTraverse.' ('.$e->getMessage().') ');
             $this->pages[$urlToTraverse]['status_code'] = '500';
+            $this->pages[$urlToTraverse]['dont_index'] = true;
         }
     }
 
@@ -363,9 +379,13 @@ class Crawler {
         if ($depth !== false && $depth == 0) return;
 
         foreach ($links as $urlToTraverse => $info) {
-            if ($this->isPageExternal($urlToTraverse) || !$this->checkIfCrawlable($urlToTraverse)) continue;
+            if (($this->isPageExternal($urlToTraverse) && !$this->parameters[self::CRAWL_EXTERNAL_LINKS]) || !$this->checkIfCrawlable($urlToTraverse)) continue;
 
-            $url = strtr($urlToTraverse, array('//'=>'/'));
+            if (strpos($urlToTraverse, '://') === false) {
+                $url = strtr($urlToTraverse, array('//'=>'/'));
+            } else {
+                $url = $urlToTraverse;
+            }
 
             if (!isset($this->pages[$url])) {
                 $this->pages[$url] = $info;
@@ -377,7 +397,7 @@ class Crawler {
                 }
             }
 
-            if (!$this->pages[$url]['visited'] && !isset($this->pages[$url]['dont_visit'])) { //traverse those that not visited yet
+            if (!$this->pages[$url]['visited'] && (!isset($this->pages[$url]['dont_visit']) || !$this->pages[$url]['dont_visit'])) { //traverse those that not visited yet
                 $this->crawlPages($this->normalizeLink($links[$url]['absolute_url']), $depth);
             }
         }
@@ -409,7 +429,9 @@ class Crawler {
         if (!$index) {
             $indexPath = $this->container->get('kernel')->getRootDir().'/../data/search';
             if (!file_exists($indexPath)) {
+                $oldmask = umask(0);
                 mkdir($indexPath, 0777, true);
+                umask($oldmask);
             }
 
             $luceneSearch->setIndex(
@@ -433,7 +455,7 @@ class Crawler {
 
         if (is_object($index)) {
             foreach ($this->pages as $url => $page) {
-                if (!$this->isPageValid($url, $page)) continue;
+                if (!$this->isPageValid($url, $page) || (isset($page['dont_index']) && $page['dont_index'])) continue;
 
                 // find URL documents
                 $hits = $index->find('url:"'.$url.'"');

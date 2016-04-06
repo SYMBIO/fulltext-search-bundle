@@ -40,6 +40,12 @@ class Configuration implements ConfigurationInterface
                 ->scalarNode(Crawler::PAGE_ID_PARAM)->defaultValue('')->end()
                 // XPath to element with route
                 ->scalarNode(Crawler::ROUTE_NAME_PARAM)->defaultValue('')->end()
+                // crawl external links?
+                ->scalarNode(Crawler::CRAWL_EXTERNAL_LINKS)->defaultValue(false)->end()
+                // depth of crawling external links
+                ->scalarNode(Crawler::EXTERNAL_LINKS_DEPTH)->defaultValue(0)->end()
+                // class tells to crawler dont index this page
+                ->scalarNode(Crawler::NOINDEX_CLASS_PARAM)->defaultValue('crawler__noindex')->end()
                 // XPath to elements with menu
                 ->arrayNode(Crawler::MENU_SECTIONS_PARAM)
                     ->beforeNormalization()

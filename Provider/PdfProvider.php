@@ -7,6 +7,11 @@ use Symbio\FulltextSearchBundle\Service\Crawler;
 
 class PdfProvider extends Provider
 {
+    protected function shouldBeIndexed(DomCrawler &$crawler, $url)
+    {
+        // TODO: Implement shouldBeIndexed() method.
+    }
+
     /**
      * @inheritDoc
      */

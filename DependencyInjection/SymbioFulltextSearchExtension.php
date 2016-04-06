@@ -2,6 +2,7 @@
 
 namespace Symbio\FulltextSearchBundle\DependencyInjection;
 
+use Symbio\FulltextSearchBundle\Event\PageExtractedEvent;
 use Symbio\FulltextSearchBundle\Service\Crawler;
 use Symbio\FulltextSearchBundle\Service\Search;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
@@ -40,5 +41,8 @@ class SymbioFulltextSearchExtension extends Extension
         $container->setParameter('symbio_fulltext_search.'.Crawler::TITLE_TAGS_PARAM, $config[Crawler::TITLE_TAGS_PARAM]);
         $container->setParameter('symbio_fulltext_search.'.Crawler::BOOST_PARAM, $config[Crawler::BOOST_PARAM]);
         $container->setParameter('symbio_fulltext_search.'.Crawler::LINK_SELECTOR_PARAM, $config[Crawler::LINK_SELECTOR_PARAM]);
+        $container->setParameter('symbio_fulltext_search.'.Crawler::CRAWL_EXTERNAL_LINKS, $config[Crawler::CRAWL_EXTERNAL_LINKS]);
+        $container->setParameter('symbio_fulltext_search.'.Crawler::EXTERNAL_LINKS_DEPTH, $config[Crawler::EXTERNAL_LINKS_DEPTH]);
+        $container->setParameter('symbio_fulltext_search.'.Crawler::NOINDEX_CLASS_PARAM, $config[Crawler::NOINDEX_CLASS_PARAM]);
     }
 }
