@@ -13,10 +13,12 @@ class Search
 	const QUERY_HANDLER = 'orangegate.fulltext_search.query';
 
 	protected $kernel;
+    protected $indexManager;
 
-	public function __construct(\AppKernel $kernel)
+	public function __construct(\AppKernel $kernel, IndexManager $indexManager)
 	{
 		$this->kernel = $kernel;
+        $this->indexManager = $indexManager;
 	}
 
 	public function search($expression, $page = 1, $conditions = null, $indexName = null)
@@ -30,7 +32,7 @@ class Search
 		}
 
 		if (mb_strlen($expression, 'utf-8') > 2) {
-			$index = $this->kernel->getContainer()->get('ivory_lucene_search')->getIndex($indexName);
+			$index = $this->indexManager->getIndex($indexName);
 
 			$query = $this->prepareQuery($expression, $conditions);
 			$results = $index->find($query);
@@ -74,7 +76,12 @@ class Search
 						unset($expressionWords[$key]);
 					}
 				}
-				$words = array_merge(self::getWordsCombinations($expressionWords), $words);
+				$wordsCombinations = self::getWordsCombinations($expressionWords);
+                foreach($wordsCombinations as $wordsCombination) {
+                    if (!in_array($wordsCombination, $words)) {
+                        $words[] = $wordsCombination;
+                    }
+                }
 			} elseif (!in_array($expression, $words)) {
 				$words[] = $expression;
 			}
@@ -84,19 +91,31 @@ class Search
 			return (count($b) - count($a));
 		});
 
+		$scoredWords = array();
+        $scoreMax = 0;
 		foreach($words as $wordIndex => $word) {
 			if (is_array($word)) {
+                $words[$wordIndex] = implode(' ', $word);
 				if (count($word) > 1) {
-					$words[$wordIndex] = '"'.implode(' ', $word).'"^'.count($word);
+                    if (count($word) > $scoreMax) $scoreMax = count($word);
+                    $scoredWords[$wordIndex] = '"'.$words[$wordIndex].'"^'.count($word);
 				} else {
-					$words[$wordIndex] = '"'.implode(' ', $word).'"^1';
+                    if (1 > $scoreMax) $scoreMax = 1;
+                    $scoredWords[$wordIndex] = '"'.$words[$wordIndex].'"^1';
 				}
 			} else {
-				$words[$wordIndex] = '"'.$word.'"^1';
+                if (1 > $scoreMax) $scoreMax = 1;
+                $scoredWords[$wordIndex] = '"'.$word.'"^1';
 			}
 		}
 
-		$query = '('.implode(' OR ', $words).')';
+        foreach($expressions as $expression) {
+            if (!in_array($expression, $words)) {
+                $scoredWords[] = '"'.$expression.'"^'.($scoreMax + 1);
+            }
+        }
+
+		$query = '('.implode(' OR ', $scoredWords).')';
 
 		// specificke podminky do query
 		if (is_array($conditions) && count($conditions)) {
@@ -123,39 +142,43 @@ class Search
 		return $query;
 	}
 
-	private static function getWordsCombinations($words)
+    protected static function getWordsCombinations($words)
 	{
-		$combinations = array();
+		// primary array with combinations result
+        $combinations = array();
+
+        // secondary array to compare if such words combination is not included (prevent wrong words order)
+        $combinationsSorted = array();
 
 		foreach ($words as $word) {
-			self::addCombination(array($word), $combinations);
+			self::addCombination(array($word), $combinations, $combinationsSorted);
 
 			$word2Buffer = array();
 
 			foreach ($words as $word2) {
 				if ($word != $word2) {
-					self::addCombination(array($word, $word2), $combinations);
+					self::addCombination(array($word, $word2), $combinations, $combinationsSorted);
 
 					if (count($word2Buffer)) {
 						foreach($word2Buffer as $word2BufferIndex => $word2BufferItem) {
-							self::addCombination(array($word2BufferItem, $word2), $combinations);
-							self::addCombination(array($word, $word2BufferItem, $word2), $combinations);
+							self::addCombination(array($word2BufferItem, $word2), $combinations, $combinationsSorted);
+							self::addCombination(array($word, $word2BufferItem, $word2), $combinations, $combinationsSorted);
 
 							if (count($word2Buffer) >= 3) {
 								if ($word2BufferIndex == 0) {
-									self::addCombination(array_merge(array($word2), array_slice($word2Buffer,1)), $combinations);
-									self::addCombination(array_merge(array($word, $word2), array_slice($word2Buffer,1)), $combinations);
+									self::addCombination(array_merge(array($word2), array_slice($word2Buffer,1)), $combinations, $combinationsSorted);
+									self::addCombination(array_merge(array($word, $word2), array_slice($word2Buffer,1)), $combinations, $combinationsSorted);
 								} elseif ($word2BufferIndex == count($word2Buffer)-1) {
-									self::addCombination(array_merge(array($word2), array_slice($word2Buffer,0,count($word2Buffer)-1)), $combinations);
-									self::addCombination(array_merge(array($word, $word2), array_slice($word2Buffer,0,count($word2Buffer)-1)), $combinations);
+									self::addCombination(array_merge(array($word2), array_slice($word2Buffer,0,count($word2Buffer)-1)), $combinations, $combinationsSorted);
+									self::addCombination(array_merge(array($word, $word2), array_slice($word2Buffer,0,count($word2Buffer)-1)), $combinations, $combinationsSorted);
 								} else {
-									self::addCombination(array_merge(array($word2), array_slice($word2Buffer,0,$word2BufferIndex), array_slice($word2Buffer,$word2BufferIndex+1)), $combinations);
-									self::addCombination(array_merge(array($word, $word2), array_slice($word2Buffer,0,$word2BufferIndex), array_slice($word2Buffer,$word2BufferIndex+1)), $combinations);
+									self::addCombination(array_merge(array($word2), array_slice($word2Buffer,0,$word2BufferIndex), array_slice($word2Buffer,$word2BufferIndex+1)), $combinations, $combinationsSorted);
+									self::addCombination(array_merge(array($word, $word2), array_slice($word2Buffer,0,$word2BufferIndex), array_slice($word2Buffer,$word2BufferIndex+1)), $combinations, $combinationsSorted);
 								}
 							}
 						}
-						self::addCombination(array_merge(array($word,$word2),$word2Buffer), $combinations);
-						self::addCombination(array_merge(array($word2),$word2Buffer), $combinations);
+						self::addCombination(array_merge(array($word,$word2),$word2Buffer), $combinations, $combinationsSorted);
+						self::addCombination(array_merge(array($word2),$word2Buffer), $combinations, $combinationsSorted);
 					}
 
 					$word2Buffer[] = $word2;
@@ -166,12 +189,15 @@ class Search
 		return $combinations;
 	}
 
-	private static function addCombination($combination, &$combinations)
+    protected static function addCombination($combination, &$combinations, &$combinationsSorted)
 	{
-		sort($combination);
-		$combination = array_unique($combination);
-		if (!in_array($combination, $combinations))	{
+        $combinationSorted = $combination = array_unique($combination);
+
+        sort($combinationSorted);
+
+		if (!in_array($combinationSorted, $combinationsSorted))	{
 			$combinations[] = $combination;
+            $combinationsSorted[] = $combinationSorted;
 		}
 	}
 
@@ -237,7 +263,7 @@ class Search
 		}
 
 		try {
-            $index = $this->kernel->getContainer()->get('ivory_lucene_search')->getIndex($indexName);
+            $index = $this->indexManager->getIndex($indexName);
 			$results = $index->find('url:"'.$url.'"');
 		} catch(\Exception $e) {
 			// do nothing
