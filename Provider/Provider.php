@@ -9,8 +9,9 @@ use Symfony\Component\DomCrawler\Crawler as DomCrawler;
 
 abstract class Provider
 {
+    const CONFIG_CRAWLER_PARAMETERS_HANDLER = 'crawler_parameters';
+
     protected $parameters;
-    protected $isExternal;
 
     protected $eventsManager;
 
@@ -23,25 +24,28 @@ abstract class Provider
 
     /**
      * extract page info
-     * @param DomCrawler $crawler
-     * @param string $url
-     * @param array $parameters
+     * @param array $config
      * @return array page info
      */
-    public function extract(DomCrawler &$crawler, $url, $isExternal, $parameters = array()) {
-        $this->parameters = $parameters;
-        $this->isExternal = $isExternal;
+    public function extract(array $config = array()) {
+        if (!isset($config[self::CONFIG_CRAWLER_PARAMETERS_HANDLER]) || !is_array($config[self::CONFIG_CRAWLER_PARAMETERS_HANDLER])) {
+            throw new \Exception('Crawler parameters must be injected into provider');
+        } else {
+            $this->parameters = $config[self::CONFIG_CRAWLER_PARAMETERS_HANDLER];
+        }
 
-        if ($this->shouldBeIndexed($crawler, $url)) {
+        $this->configure($config);
+
+        if ($this->shouldBeIndexed()) {
             $this->page = new Page($this->parameters[Crawler::TITLE_TAGS_PARAM]);
 
-            $this->extractTitle($crawler, $url);
-            $this->extractHeadlines($crawler, $url);
-            $this->extractDescription($crawler, $url);
-            $this->extractBody($crawler, $url);
-            $this->extractImage($crawler, $url);
-            $this->extractPageId($crawler, $url);
-            $this->extractRouteName($crawler, $url);
+            $this->extractTitle();
+            $this->extractHeadlines();
+            $this->extractDescription();
+            $this->extractBody();
+            $this->extractImage();
+            $this->extractPageId();
+            $this->extractRouteName();
 
             $this->eventsManager->firePageExtractedEvent($this->getPage());
 
@@ -70,59 +74,49 @@ abstract class Provider
     }
 
     /**
+     * configure provider
+     * @param array $config
+     */
+    protected abstract function configure(array $config);
+
+    /**
      * check no index flag
-     * @param DomCrawler $crawler
-     * @param string $uri
      * @return boolean
      */
-    protected abstract function shouldBeIndexed(DomCrawler &$crawler, $url);
+    protected abstract function shouldBeIndexed();
 
     /**
      * extract document title
-     * @param DomCrawler $crawler
-     * @param string $uri
      */
-    protected abstract function extractTitle(DomCrawler &$crawler, $url);
+    protected abstract function extractTitle();
 
     /**
      * extract document description
-     * @param DomCrawler $crawler
-     * @param string $uri
      */
-    protected abstract function extractDescription(DomCrawler &$crawler, $url);
+    protected abstract function extractDescription();
 
     /**
      * extract document headers
-     * @param DomCrawler $crawler
-     * @param string $uri
      */
-    protected abstract function extractHeadlines(DomCrawler &$crawler, $url);
+    protected abstract function extractHeadlines();
 
     /**
      * extract document body
-     * @param DomCrawler $crawler
-     * @param string $uri
      */
-    protected abstract function extractBody(DomCrawler &$crawler, $url);
+    protected abstract function extractBody();
 
     /**
      * extract document image
-     * @param DomCrawler $crawler
-     * @param string $uri
      */
-    protected abstract function extractImage(DomCrawler &$crawler, $url);
+    protected abstract function extractImage();
 
     /**
      * extract page ID
-     * @param DomCrawler $crawler
-     * @param string $uri
      */
-    protected abstract function extractPageId(DomCrawler &$crawler, $url);
+    protected abstract function extractPageId();
 
     /**
      * extract route name
-     * @param DomCrawler $crawler
-     * @param string $uri
      */
-    protected abstract function extractRouteName(DomCrawler &$crawler, $url);
+    protected abstract function extractRouteName();
 }
