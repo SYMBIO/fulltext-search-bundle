@@ -44,5 +44,7 @@ class SymbioFulltextSearchExtension extends Extension
         $container->setParameter('symbio_fulltext_search.'.Crawler::CRAWL_EXTERNAL_LINKS, $config[Crawler::CRAWL_EXTERNAL_LINKS]);
         $container->setParameter('symbio_fulltext_search.'.Crawler::EXTERNAL_LINKS_DEPTH, $config[Crawler::EXTERNAL_LINKS_DEPTH]);
         $container->setParameter('symbio_fulltext_search.'.Crawler::NOINDEX_CLASS_PARAM, $config[Crawler::NOINDEX_CLASS_PARAM]);
+        $container->setParameter('symbio_fulltext_search.'.Crawler::WEB_DIR, $config[Crawler::WEB_DIR]);
+        $container->setParameter('symbio_fulltext_search.'.Crawler::IMAGE_URI, $config[Crawler::IMAGE_URI]);
     }
 }

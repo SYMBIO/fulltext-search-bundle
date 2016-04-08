@@ -46,6 +46,10 @@ class Configuration implements ConfigurationInterface
                 ->scalarNode(Crawler::EXTERNAL_LINKS_DEPTH)->defaultValue(0)->end()
                 // class tells to crawler dont index this page
                 ->scalarNode(Crawler::NOINDEX_CLASS_PARAM)->defaultValue('crawler__noindex')->end()
+                // name of document root directory
+                ->scalarNode(Crawler::WEB_DIR)->defaultValue('web')->end()
+                // URI to fulltext image store
+                ->scalarNode(Crawler::IMAGE_URI)->defaultValue('/uploads/symbio_fulltext_search')->end()
                 // XPath to elements with menu
                 ->arrayNode(Crawler::MENU_SECTIONS_PARAM)
                     ->beforeNormalization()
