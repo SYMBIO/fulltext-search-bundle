@@ -41,6 +41,8 @@ class Crawler {
     protected $indexName;
 
     protected $container;
+    protected $indexManager;
+
     protected $logger;
 
     protected $parameters;
@@ -50,7 +52,10 @@ class Crawler {
 
     protected $bodyLinksXPath;
 
-    public function __construct(ContainerInterface $container) {
+    public function __construct(ContainerInterface $container, IndexManager $indexManager) {
+        $this->container = $container;
+        $this->indexManager = $indexManager;
+
         $this->parameters = array(
             self::USER_AGENT_PARAM => $container->getParameter('symbio_fulltext_search.'.self::USER_AGENT_PARAM),
             self::TITLE_CLASS_PARAM => $container->getParameter('symbio_fulltext_search.'.self::TITLE_CLASS_PARAM),
@@ -70,8 +75,6 @@ class Crawler {
             self::WEB_DIR => $container->getParameter('symbio_fulltext_search.'.self::WEB_DIR),
             self::IMAGE_URI => $container->getParameter('symbio_fulltext_search.'.self::IMAGE_URI),
         );
-
-        $this->container = $container;
 
         // assemble body links XPath array
         $linkSelector = $this->parameters[self::LINK_SELECTOR_PARAM];
@@ -154,7 +157,7 @@ class Crawler {
         $this->log(sprintf('Clean index "%s" ...', $this->indexName));
 
         try {
-            $index = $this->container->get('ivory_lucene_search')->getIndex($this->indexName);
+            $index = $this->indexManager->getIndex($this->indexName);
         } catch(\Exception $e) {
             $index = null;
         }
@@ -210,16 +213,14 @@ class Crawler {
 
         $this->log(sprintf('Delete index "%s" ...', $this->indexName));
 
-        $luceneSearch = $this->container->get('ivory_lucene_search');
-
         try {
-            $index = $luceneSearch->getIndex($this->indexName);
+            $index = $this->indexManager->getIndex($this->indexName);
         } catch(\Exception $e) {
             $index = null;
         }
 
         if (is_object($index)) {
-            $luceneSearch->removeIndex($this->indexName, true);
+            $this->indexManager->removeIndex($this->indexName, true);
             $this->log('Deleting finished');
         } else {
             $this->log('Nothing to delete, index doesn\'t exists');
@@ -231,7 +232,7 @@ class Crawler {
      */
     public function indexCount() {
         try {
-            $index = $this->container->get('ivory_lucene_search')->getIndex($this->indexName);
+            $index = $this->indexManager->getIndex($this->indexName);
         } catch(\Exception $e) {
             $index = null;
         }
@@ -431,37 +432,7 @@ class Crawler {
      * @param boolean $force Force to rewrite all documents
      */
     protected function indexPages($force = true) {
-        $luceneSearch = $this->container->get('ivory_lucene_search');
-
-        try {
-            $index = $luceneSearch->getIndex($this->indexName);
-        } catch(\Exception $e) {
-            $index = null;
-        }
-
-        if (!$index) {
-            $indexPath = $this->container->get('kernel')->getRootDir().'/../data/search';
-            if (!file_exists($indexPath)) {
-                $oldmask = umask(0);
-                mkdir($indexPath, 0777, true);
-                chmod($indexPath, 0777);
-                umask($oldmask);
-            }
-
-            $luceneSearch->setIndex(
-                $this->indexName,
-                $indexPath,
-                'ZendSearch\Lucene\Analysis\Analyzer\Common\Text\CaseInsensitive',
-                10,
-                PHP_INT_MAX,
-                10,
-                0777,
-                false,
-                'UTF-8'
-            );
-
-            $index = $luceneSearch->getIndex($this->indexName);
-        }
+        $index = $this->indexManager->getIndex($this->indexName);
 
         $this->log(sprintf('%s index "%s" ...', $force ? 'Create' : 'Refresh', $this->indexName));
 

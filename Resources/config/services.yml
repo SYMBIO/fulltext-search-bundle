@@ -3,11 +3,19 @@ services:
         class: %symbio_fulltext_search.class%
         arguments:
             - @kernel
+            - @symbio_fulltext_search.index_manager
 
     symbio_fulltext_search.crawler:
         class: %symbio_fulltext_search.crawler.class%
         arguments:
             - @service_container
+            - @symbio_fulltext_search.index_manager
+
+    symbio_fulltext_search.index_manager:
+        class: Symbio\FulltextSearchBundle\Service\IndexManager
+        arguments:
+            - @kernel
+            - @ivory_lucene_search
 
     symbio_fulltext_search.events_manager:
         class: Symbio\FulltextSearchBundle\Event\EventsManager
