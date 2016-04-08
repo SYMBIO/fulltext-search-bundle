@@ -33,7 +33,7 @@ class Configuration implements ConfigurationInterface
                 // default image URL
                 ->scalarNode(Crawler::DEFAULT_IMAGE_PARAM)->defaultValue('')->end()
                 // default index name
-                ->scalarNode(Crawler::DEFAULT_INDEX_PARAM)->defaultValue('fulltext')->end()
+                ->scalarNode(Crawler::DEFAULT_INDEX_PARAM)->defaultValue('web')->end()
                 // XPath to element with route
                 ->scalarNode(Crawler::LINK_SELECTOR_PARAM)->defaultValue('a[not(@rel="nofollow")]')->end()
                 // XPath to element with page ID
