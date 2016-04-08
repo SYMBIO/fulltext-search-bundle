@@ -3,8 +3,10 @@
 namespace Symbio\FulltextSearchBundle\Service;
 
 use Goutte\Client;
-use Guzzle\Http\Exception\CurlException;
 use Symbio\FulltextSearchBundle\Entity\Page;
+use Symbio\FulltextSearchBundle\Provider\HtmlProvider;
+use Symbio\FulltextSearchBundle\Provider\PdfProvider;
+use Symbio\FulltextSearchBundle\Provider\Provider;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\DomCrawler\Crawler as DomCrawler;
@@ -26,6 +28,10 @@ class Crawler {
     const NOINDEX_CLASS_PARAM = 'noindex_class';
     const PAGE_ID_PARAM = 'page_id';
     const ROUTE_NAME_PARAM = 'route_name';
+
+    const ROOT_DIR = 'root_dir';
+    const WEB_DIR = 'web_dir';
+    const IMAGE_URI = 'image_uri';
 
     protected $baseUrl;
     protected $protocol;
@@ -60,6 +66,9 @@ class Crawler {
             self::CRAWL_EXTERNAL_LINKS => $container->getParameter('symbio_fulltext_search.'.self::CRAWL_EXTERNAL_LINKS),
             self::EXTERNAL_LINKS_DEPTH => $container->getParameter('symbio_fulltext_search.'.self::EXTERNAL_LINKS_DEPTH),
             self::NOINDEX_CLASS_PARAM => $container->getParameter('symbio_fulltext_search.'.self::NOINDEX_CLASS_PARAM),
+            self::ROOT_DIR => $container->get('kernel')->getRootDir() . '/../',
+            self::WEB_DIR => $container->getParameter('symbio_fulltext_search.'.self::WEB_DIR),
+            self::IMAGE_URI => $container->getParameter('symbio_fulltext_search.'.self::IMAGE_URI),
         );
 
         $this->container = $container;
@@ -248,38 +257,48 @@ class Crawler {
             )
         ) return;
 
+        $client = new Client();
+        $client->setHeader('User-Agent', $this->parameters['user_agent']);
+
         try {
-            $client = new Client();
-            $client->setHeader('User-Agent', $this->parameters['user_agent']);
+            $crawler = $client->request('GET', $urlToTraverse);
+            $statusCode = $client->getResponse()->getStatus();
+        } catch(\Exception $e) {
+            $statusCode = 400;
+        }
 
-            try {
-                $crawler = $client->request('GET', $urlToTraverse);
-                $statusCode = $client->getResponse()->getStatus();
-            } catch(\Exception $e) {
-                $statusCode = 400;
-            }
+        $this->log(sprintf("%s: %s", $statusCode, $urlToTraverse));
+        $this->setPageStatusStats($statusCode);
 
-            $this->log(sprintf("%s: %s", $statusCode, $urlToTraverse));
-            $this->setPageStatusStats($statusCode);
+        if ($statusCode >= 400) {
+            return;
+        }
 
-            if ($statusCode >= 400) {
-                return;
-            }
+        if (!isset($this->pages[$urlToTraverse])) $this->pages[$urlToTraverse] = array();
 
-            if (!isset($this->pages[$urlToTraverse])) $this->pages[$urlToTraverse] = array();
+        $this->pages[$urlToTraverse]['status_code'] = $statusCode;
 
-            $this->pages[$urlToTraverse]['status_code'] = $statusCode;
+        $contentType = $client->getResponse()->getHeader('Content-Type');
+        if (strpos($contentType, ';') !== false) {
+            $contentType = substr($contentType, 0, strpos($contentType, ';'));
+        }
 
-            $contentType = $client->getResponse()->getHeader('Content-Type');
-            if (strpos($contentType, ';') !== false) {
-                $contentType = substr($contentType, 0, strpos($contentType, ';'));
-            }
+        switch($contentType) {
+            case 'text/html':
+                $provider = $this->container->get('symbio_fulltext_search.provider.html');
 
-            switch($contentType) {
-                case 'text/html':
-                    $provider = $this->container->get('symbio_fulltext_search.provider.html');
-                    $pageInfo = $provider->extract($crawler, $urlToTraverse, isset($this->pages[$urlToTraverse]['external_link']) ? $this->pages[$urlToTraverse]['external_link'] : false, $this->parameters);
+                try {
+                    $pageInfo = $provider->extract(array(
+                        HtmlProvider::CONFIG_CRAWLER_PARAMETERS_HANDLER => $this->parameters,
+                        HtmlProvider::CONFIG_CRAWLER_HANDLER => $crawler,
+                        HtmlProvider::CONFIG_IS_EXTERNAL_LINK_HANDLER => isset($this->pages[$urlToTraverse]['external_link']) ? $this->pages[$urlToTraverse]['external_link'] : false,
+                    ));
+                } catch (\Exception $e) {
+                    error_log('Error retrieving data from link: '.$urlToTraverse.' ('.$e->getMessage().') ');
+                    $this->pages[$urlToTraverse]['dont_index'] = true;
+                }
 
+                if ($pageInfo) {
                     $this->pages[$urlToTraverse] = array_merge($this->pages[$urlToTraverse], $pageInfo);
                     $this->pages[$urlToTraverse]['visited'] = true; // mark current url as visited
 
@@ -294,16 +313,8 @@ class Crawler {
                             $this->crawlChildLinks($links, $this->parameters[self::EXTERNAL_LINKS_DEPTH]);
                         }
                     }
-                    break;
-            }
-        } catch (CurlException $e) {
-            error_log('CURL exception: ' . $urlToTraverse);
-            $this->pages[$urlToTraverse]['status_code'] = '500';
-            $this->pages[$urlToTraverse]['dont_index'] = true;
-        } catch (\Exception $e) {
-            error_log('error retrieving data from link: '.$urlToTraverse.' ('.$e->getMessage().') ');
-            $this->pages[$urlToTraverse]['status_code'] = '500';
-            $this->pages[$urlToTraverse]['dont_index'] = true;
+                }
+                break;
         }
     }
 
@@ -431,6 +442,7 @@ class Crawler {
             if (!file_exists($indexPath)) {
                 $oldmask = umask(0);
                 mkdir($indexPath, 0777, true);
+                chmod($indexPath, 0777);
                 umask($oldmask);
             }
 
