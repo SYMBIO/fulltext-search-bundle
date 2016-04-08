@@ -263,11 +263,13 @@ class Crawler {
         try {
             $crawler = $client->request('GET', $urlToTraverse);
             $statusCode = $client->getResponse()->getStatus();
+            $this->log(sprintf("%s: %s", $statusCode, $urlToTraverse));
         } catch(\Exception $e) {
             $statusCode = 400;
+            $this->log(sprintf("%s: %s", $statusCode, $urlToTraverse));
+            $this->log(sprintf("Error page retrieving (%s)", $e->getMessage()));
         }
 
-        $this->log(sprintf("%s: %s", $statusCode, $urlToTraverse));
         $this->setPageStatusStats($statusCode);
 
         if ($statusCode >= 400) {
