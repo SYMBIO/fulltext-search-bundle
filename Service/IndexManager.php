@@ -21,7 +21,7 @@ class IndexManager
         if (!method_exists($this->luceneSearch, $name)) {
             throw new \Exception(sprintf('Method %s doesn\'t exists in class Symbio\FulltextSearchBundle\Service\IndexManager'));
         }
-        return call_user_func_array($this->luceneSearch->{$name}, $arguments);
+        return call_user_func_array(array($this->luceneSearch, $name), $arguments);
     }
 
     public function getIndex($indexName)
