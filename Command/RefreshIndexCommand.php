@@ -24,5 +24,6 @@ class RefreshIndexCommand extends CreateIndexCommand
 			->setName('symbio:fulltext:refresh-index')
 			->setDescription('Refresh a lucene index for a website')
 		;
+		$this->defaultParameters['force'] = false;
 	}
 }

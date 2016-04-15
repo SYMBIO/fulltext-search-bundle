@@ -13,7 +13,7 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class CreateIndexCommand extends ContainerAwareCommand
 {
-	protected $force = false;
+	protected $defaultParameters = array();
 
 	/**
 	 * @see Command
@@ -29,7 +29,7 @@ class CreateIndexCommand extends ContainerAwareCommand
 			->setName('symbio:fulltext:create-index')
 			->setDescription('Creates a lucene index for a website')
 		;
-        $this->force = true;
+        $this->defaultParameters['force'] = true;
 	}
 
 	/**
@@ -38,16 +38,18 @@ class CreateIndexCommand extends ContainerAwareCommand
 	protected function execute(InputInterface $input, OutputInterface $output)
 	{
 		$url = $input->getArgument('url');
-		$depth = $input->getOption('depth');
-		$indexName = $input->getOption('index');
-		$notClean = $input->getOption('dont-clean');
+
+		$depth = $input->hasOption('depth') ? $input->getOption('depth') : $this->defaultParameters['depth'];
+		$indexName = $input->hasOption('index') ? $input->getOption('index') : $this->defaultParameters['index'];
+		$dontClean = $input->hasOption('dont-clean') ? $input->getOption('dont-clean') : $this->defaultParameters['dont-clean'];
+		$force = $input->hasOption('force') ? $input->getOption('force') : $this->defaultParameters['force'];
 
 		$output->writeln(sprintf('Starting from "%s" at %s', $url, date('d.m.Y H:i:s')));
 
 		$crawler = $this->getContainer()->get('symbio_fulltext_search.crawler');
 		$crawler->setIndexName($indexName);
 		$crawler->setLogger($output);
-		$crawler->createIndex($url, $depth !== false ? : false, $this->force, !$notClean);
+		$crawler->createIndex($url, $depth !== false ? : false, $force, !$dontClean);
 
 		$output->writeln(sprintf('Finished crawling at %s', date('d.m.Y H:i:s')));
 	}
