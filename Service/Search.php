@@ -5,6 +5,9 @@ namespace Symbio\FulltextSearchBundle\Service;
 use Symbio\FulltextSearchBundle\Entity\Page;
 use Symfony\Component\HttpFoundation\Session\Session;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use ZendSearch\Lucene\Analysis\Analyzer\Analyzer;
+use ZendSearch\Lucene\Analysis\Analyzer\Common\Utf8\CaseInsensitive;
+use ZendSearch\Lucene\Search\QueryParser;
 
 class Search
 {
@@ -34,6 +37,7 @@ class Search
 		if (mb_strlen($expression, 'utf-8') > 2) {
 			$index = $this->indexManager->getIndex($indexName);
 
+			Analyzer::setDefault(New CaseInsensitive());
 			$query = $this->prepareQuery($expression, $conditions);
 			$results = $index->find($query);
 
@@ -67,55 +71,7 @@ class Search
 			$expressions[] = $expressionTranslit;
 		}
 
-		$words = array();
-		foreach($expressions as $expression) {
-			if (strpos($expression, ' ') !== false) {
-				$expressionWords = explode(' ', $expression);
-				foreach($expressionWords as $key => $word) {
-					if (!$word || mb_strlen($word, 'utf-8') <= 2) {
-						unset($expressionWords[$key]);
-					}
-				}
-				$wordsCombinations = self::getWordsCombinations($expressionWords);
-                foreach($wordsCombinations as $wordsCombination) {
-                    if (!in_array($wordsCombination, $words)) {
-                        $words[] = $wordsCombination;
-                    }
-                }
-			} elseif (!in_array($expression, $words)) {
-				$words[] = $expression;
-			}
-		}
-
-		usort($words, function($a, $b){
-			return (count($b) - count($a));
-		});
-
-		$scoredWords = array();
-        $scoreMax = 0;
-		foreach($words as $wordIndex => $word) {
-			if (is_array($word)) {
-                $words[$wordIndex] = implode(' ', $word);
-				if (count($word) > 1) {
-                    if (count($word) > $scoreMax) $scoreMax = count($word);
-                    $scoredWords[$wordIndex] = '"'.$words[$wordIndex].'"^'.count($word);
-				} else {
-                    if (1 > $scoreMax) $scoreMax = 1;
-                    $scoredWords[$wordIndex] = '"'.$words[$wordIndex].'"^1';
-				}
-			} else {
-                if (1 > $scoreMax) $scoreMax = 1;
-                $scoredWords[$wordIndex] = '"'.$word.'"^1';
-			}
-		}
-
-        foreach($expressions as $expression) {
-            if (!in_array($expression, $words)) {
-                $scoredWords[] = '"'.$expression.'"^'.($scoreMax + 1);
-            }
-        }
-
-		$query = '('.implode(' OR ', $scoredWords).')';
+        $query = QueryParser::parse('("'.implode('" OR "', $expressions).'")');
 
 		// specificke podminky do query
 		if (is_array($conditions) && count($conditions)) {
@@ -140,65 +96,6 @@ class Search
 		}
 
 		return $query;
-	}
-
-    protected static function getWordsCombinations($words)
-	{
-		// primary array with combinations result
-        $combinations = array();
-
-        // secondary array to compare if such words combination is not included (prevent wrong words order)
-        $combinationsSorted = array();
-
-		foreach ($words as $word) {
-			self::addCombination(array($word), $combinations, $combinationsSorted);
-
-			$word2Buffer = array();
-
-			foreach ($words as $word2) {
-				if ($word != $word2) {
-					self::addCombination(array($word, $word2), $combinations, $combinationsSorted);
-
-					if (count($word2Buffer)) {
-						foreach($word2Buffer as $word2BufferIndex => $word2BufferItem) {
-							self::addCombination(array($word2BufferItem, $word2), $combinations, $combinationsSorted);
-							self::addCombination(array($word, $word2BufferItem, $word2), $combinations, $combinationsSorted);
-
-							if (count($word2Buffer) >= 3) {
-								if ($word2BufferIndex == 0) {
-									self::addCombination(array_merge(array($word2), array_slice($word2Buffer,1)), $combinations, $combinationsSorted);
-									self::addCombination(array_merge(array($word, $word2), array_slice($word2Buffer,1)), $combinations, $combinationsSorted);
-								} elseif ($word2BufferIndex == count($word2Buffer)-1) {
-									self::addCombination(array_merge(array($word2), array_slice($word2Buffer,0,count($word2Buffer)-1)), $combinations, $combinationsSorted);
-									self::addCombination(array_merge(array($word, $word2), array_slice($word2Buffer,0,count($word2Buffer)-1)), $combinations, $combinationsSorted);
-								} else {
-									self::addCombination(array_merge(array($word2), array_slice($word2Buffer,0,$word2BufferIndex), array_slice($word2Buffer,$word2BufferIndex+1)), $combinations, $combinationsSorted);
-									self::addCombination(array_merge(array($word, $word2), array_slice($word2Buffer,0,$word2BufferIndex), array_slice($word2Buffer,$word2BufferIndex+1)), $combinations, $combinationsSorted);
-								}
-							}
-						}
-						self::addCombination(array_merge(array($word,$word2),$word2Buffer), $combinations, $combinationsSorted);
-						self::addCombination(array_merge(array($word2),$word2Buffer), $combinations, $combinationsSorted);
-					}
-
-					$word2Buffer[] = $word2;
-				}
-			}
-		}
-
-		return $combinations;
-	}
-
-    protected static function addCombination($combination, &$combinations, &$combinationsSorted)
-	{
-        $combinationSorted = $combination = array_unique($combination);
-
-        sort($combinationSorted);
-
-		if (!in_array($combinationSorted, $combinationsSorted))	{
-			$combinations[] = $combination;
-            $combinationsSorted[] = $combinationSorted;
-		}
 	}
 
 	public function prepareBreadcrumbsPages($articles)
