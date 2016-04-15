@@ -79,7 +79,7 @@ class Configuration implements ConfigurationInterface
                         ->then(function($v) { return preg_split('/\s*,\s*/', $v); })
                     ->end()
                     ->canBeUnset()
-                    ->defaultValue(array('h1','h2','h3'))
+                    ->defaultValue(array('h1'))
                     ->requiresAtLeastOneElement()
                     ->prototype('scalar')->end()
                 ->end()
@@ -93,9 +93,7 @@ class Configuration implements ConfigurationInterface
                     ->defaultValue(array(
                         'title' => 2,
                         'description' => 1.5,
-                        'h1' => 1.5,
-                        'h2' => 1.25,
-                        'h3' => 1.15,
+                        'h1' => 2,
                         'body' => 1,
                     ))
                     ->requiresAtLeastOneElement()
