@@ -43,16 +43,47 @@ class HtmlProvider extends Provider
     protected function extractTitle() {
         try {
             // internal link
-            if (!$this->isExternal && $this->parameters[Crawler::TITLE_CLASS_PARAM]) {
-                $selector = 'html/body//*/*[contains(@class, "'.$this->parameters[Crawler::TITLE_CLASS_PARAM].'")]';
-                if ($this->crawler->filterXPath($selector)->count()) {
-                    $this->crawler->filterXPath($selector)->each(function(DomCrawler $node, $i) {
-                        $this->getPage()->setTitle(trim($node->text()));
-                    });
+            if (!$this->isExternal) {
+                // find title by classname
+                if ($this->parameters[Crawler::TITLE_CLASS_PARAM]) {
+                    $selector = 'html/body//*/*[contains(@class, "'.$this->parameters[Crawler::TITLE_CLASS_PARAM].'")]';
+                    if ($this->crawler->filterXPath($selector)->count()) {
+                        $this->crawler->filterXPath($selector)->each(function(DomCrawler $node, $i) {
+                            if (!$this->getPage()->hasTitle()) {
+                                $this->getPage()->setTitle(trim($node->text()));
+                            }
+                        });
+                    }
+                }
+
+                // find first H1
+                if (!$this->getPage()->hasTitle()) {
+                    foreach ($this->parameters[Crawler::BODY_SECTIONS_PARAM] as $section) {
+                        $selector = $section.'//h1';
+                        if ($this->crawler->filterXPath($selector)->count()) {
+                            $this->crawler->filterXPath($selector)->each(function(DomCrawler $node, $i) {
+                                if (!$this->getPage()->hasTitle()) {
+                                    $this->getPage()->setTitle(trim($node->text()));
+                                }
+                            });
+                        }
+                    }
+                }
+
+                // find og:title
+                if (!$this->getPage()->hasTitle()) {
+                    $selector = 'html/head/meta[@property="og:title"]';
+                    if ($this->crawler->filterXPath($selector)->count()) {
+                        $title = trim($this->crawler->filterXPath($selector)->attr('content'));
+                        if ($title) {
+                            $this->getPage()->setTitle($title);
+                        }
+                    }
                 }
             }
             // external link
-            elseif ($this->isExternal) {
+            else {
+                // find in metatags
                 foreach(array('html/head/meta[@property="og:title"]','html/head/meta[@name="title"]') as $selector) {
                     if (!$this->getPage()->hasTitle() && $this->crawler->filterXPath($selector)->count()) {
                         $title = trim($this->crawler->filterXPath($selector)->attr('content'));
@@ -62,16 +93,12 @@ class HtmlProvider extends Provider
                     }
                 }
 
+                // find title tag
                 if (!$this->getPage()->hasTitle() && $this->crawler->filterXPath('html/head/title')->count()) {
                     $this->crawler->filterXPath('html/head/title')->each(function (DomCrawler $node, $i) {
                         $this->getPage()->setTitle(trim($node->text()));
                     });
                 }
-            }
-
-            // find title in headlines if not exists
-            if (!$this->getPage()->hasTitle() && $this->getPage()->hasHeadline()) {
-                $this->setTitleFromHeadlines();
             }
         } catch(\Exception $e) {
             throw new \Exception('Extracting title in HTML provider - '.$e->getMessage());
@@ -100,18 +127,22 @@ class HtmlProvider extends Provider
     protected function extractHeadlines() {
         try {
             foreach (($this->isExternal ? array('html/body') : $this->parameters[Crawler::BODY_SECTIONS_PARAM]) as $section) {
-                foreach(($this->isExternal ? array('h1','h2','h3') : $this->parameters[Crawler::TITLE_TAGS_PARAM]) as $tag) {
+                foreach(($this->isExternal ? array('h1') : $this->parameters[Crawler::TITLE_TAGS_PARAM]) as $tagIndex => $tag) {
                     if (!$this->isExternal) {
                         switch(strtoupper($tag)) {
-                            // vyjmeme vsechny H1 z ARTICLE a zaradime mezi H2 (zpravidla vypisy clanku apod.)
                             case 'H1':
-                                $selector = $section.'//'.$tag.'[ancestor-or-self::article and not(@class="'.$this->parameters[Crawler::TITLE_CLASS_PARAM].'")]';
-                                if ($this->crawler->filterXPath($selector)->count() && count($this->parameters[Crawler::TITLE_TAGS_PARAM]) > 1) {
-                                    $this->crawler->filterXPath($selector)->each(function (DomCrawler $node, $i) use ($tag) {
-                                        $this->getPage()->setHeadline($tag, trim(html_entity_decode($node->text())));
-                                    });
+                                // vyjmeme vsechny H1 z ARTICLE a zaradime mezi H2 (zpravidla vypisy clanku apod.)
+                                if (count($this->parameters[Crawler::TITLE_TAGS_PARAM]) > 1) {
+                                    $selector = $section.'//'.$tag.'[ancestor-or-self::article and not(contains(@class, "'.$this->parameters[Crawler::TITLE_CLASS_PARAM].'"))]';
+                                    if ($this->crawler->filterXPath($selector)->count()) {
+                                        $this->crawler->filterXPath($selector)->each(function (DomCrawler $node, $i) use ($tagIndex) {
+                                            $tag = $this->parameters[Crawler::TITLE_TAGS_PARAM][$tagIndex+1];
+                                            $this->getPage()->setHeadline($tag, trim(html_entity_decode($node->text())));
+                                        });
+                                    }
                                 }
-                                $selector = $section.'//'.$tag.'[not(ancestor-or-self::article)]';
+
+                                $selector = $section.'//'.$tag.'[not(ancestor-or-self::article) and not(contains(@class, "'.$this->parameters[Crawler::TITLE_CLASS_PARAM].'"))]';
                                 break;
                             default:
                                 $selector = $section.'//'.$tag;
@@ -127,10 +158,6 @@ class HtmlProvider extends Provider
                     }
                 }
             }
-
-            if (!$this->getPage()->hasTitle() && $this->getPage()->hasHeadline()) {
-                $this->setTitleFromHeadlines();
-            }
         } catch(\Exception $e) {
             throw new \Exception('Extracting headlines in HTML provider - '.$e->getMessage());
         }
@@ -142,13 +169,69 @@ class HtmlProvider extends Provider
     protected function extractBody() {
         try {
             foreach (($this->isExternal ? array('html/body') : $this->parameters[Crawler::BODY_SECTIONS_PARAM]) as $section) {
-                if ($this->crawler->filterXPath($section)->count()) {
-                    $this->getPage()->setBody(trim(html_entity_decode($this->crawler->filterXPath($section)->text())));
+                $selector = $section . (!$this->isExternal ? '/node()[not(contains(@class, "'.$this->parameters[Crawler::NOINDEX_CLASS_PARAM].'"))]' : '');
+                if ($this->crawler->filterXPath($selector)->count()) {
+                    $this->crawler->filterXPath($selector)->each(function (DomCrawler $node, $i) {
+                        $this->extractBodyNode($node);
+                    });
                 }
             }
         } catch(\Exception $e) {
             throw new \Exception('Extracting body in HTML provider - '.$e->getMessage());
         }
+    }
+
+    /**
+     * Extract nodes with respect to excluded elements
+     * @param Object $node
+     */
+    private function extractBodyNode($node) {
+        if (!($node instanceof DomCrawler || $node instanceof \DOMElement)) return;
+
+        $isDomCrawler = $node instanceof DomCrawler;
+
+        $content = trim($isDomCrawler ? $node->text() : $node->textContent);
+
+        if ($content) {
+            $classname = $isDomCrawler ? $node->attr('class') : $node->getAttribute('class');
+
+            if (strpos($classname, $this->parameters[Crawler::NOINDEX_CLASS_PARAM]) === false) {
+                $html = $isDomCrawler ? $node->html() : $this->getNodeHtml($node);
+
+                if (strpos($html, $this->parameters[Crawler::NOINDEX_CLASS_PARAM])) {
+                    foreach($node->children() as $subnode) {
+                        $this->extractBodyNode($subnode);
+                    }
+                } else {
+                    $this->getPage()->setBody($content);
+                }
+            }
+        }
+    }
+
+    /**
+     * Returns node HTML
+     * @param \DOMElement $node
+     * @return string The node html
+     */
+    private function getNodeHtml(\DOMElement $node) {
+        $html = '';
+        try {
+            foreach ($node->childNodes as $child) {
+                if (PHP_VERSION_ID >= 50306) {
+                    // node parameter was added to the saveHTML() method in PHP 5.3.6
+                    // @see http://php.net/manual/en/domdocument.savehtml.php
+                    $html .= $child->ownerDocument->saveHTML($child);
+                } else {
+                    $document = new \DOMDocument('1.0', 'UTF-8');
+                    $document->appendChild($document->importNode($child, true));
+                    $html .= rtrim($document->saveHTML());
+                }
+            }
+        } catch(\Exception $e) {
+            // empty node list - do nothing
+        }
+        return $html;
     }
 
     /**
