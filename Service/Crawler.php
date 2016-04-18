@@ -440,7 +440,7 @@ class Crawler {
         if (is_object($index)) {
             foreach ($this->pages as $url => $page) {
                 if (!$this->isPageValid($url, $page) || (isset($page['dont_index']) && $page['dont_index'])) {
-                    if ((isset($page['dont_index']) && $page['dont_index']) && (!isset($page[Page::TITLE_KEY]) || !$page[Page::TITLE_KEY])) {
+                    if (!isset($page['dont_index']) || !$page['dont_index'] && (!isset($page[Page::TITLE_KEY]) || !$page[Page::TITLE_KEY])) {
                         $this->log('Error: title didn\'t found on page '.$url);
                     }
                     continue;
