@@ -199,8 +199,9 @@ class HtmlProvider extends Provider
                 $html = $isDomCrawler ? $node->html() : $this->getNodeHtml($node);
 
                 if (strpos($html, $this->parameters[Crawler::NOINDEX_CLASS_PARAM])) {
-                    foreach($node->children() as $subnode) {
-                        $this->extractBodyNode($subnode);
+                    $children = $isDomCrawler ? $node->children() : ($node->hasChildNodes() ? $node->childNodes : array());
+                    foreach($children as $childNode) {
+                        $this->extractBodyNode($childNode);
                     }
                 } else {
                     $this->getPage()->setBody($content);
