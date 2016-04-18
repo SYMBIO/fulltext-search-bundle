@@ -6,7 +6,6 @@ use Goutte\Client;
 use Symbio\FulltextSearchBundle\Entity\Page;
 use Symbio\FulltextSearchBundle\Provider\HtmlProvider;
 use Symbio\FulltextSearchBundle\Provider\PdfProvider;
-use Symbio\FulltextSearchBundle\Provider\Provider;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\DomCrawler\Crawler as DomCrawler;
@@ -246,28 +245,22 @@ class Crawler {
 
     /**
      * crawling single url after checking the depth value
-     * @param string $urlToTraverse
+     * @param string $url
      * @param int $depth
      */
-    protected function crawlPages($urlToTraverse, $depth) {
-        if (!$urlToTraverse
-            || (
-                isset($this->pages[$urlToTraverse]) &&
-                isset($this->pages[$urlToTraverse]['visited']) &&
-                $this->pages[$urlToTraverse]['visited']
-            )
-        ) return;
+    protected function crawlPages($url, $depth) {
+        if (!$url || (isset($this->pages[$url]) && isset($this->pages[$url]['visited']) && $this->pages[$url]['visited'])) return;
 
         $client = new Client();
         $client->setHeader('User-Agent', $this->parameters['user_agent']);
 
         try {
-            $crawler = $client->request('GET', $urlToTraverse);
+            $crawler = $client->request('GET', $url);
             $statusCode = $client->getResponse()->getStatus();
-            $this->log(sprintf("%s: %s", $statusCode, $urlToTraverse));
+            $this->log(sprintf("%s: %s", $statusCode, $url));
         } catch(\Exception $e) {
             $statusCode = 400;
-            $this->log(sprintf("%s: %s", $statusCode, $urlToTraverse));
+            $this->log(sprintf("%s: %s", $statusCode, $url));
             $this->log(sprintf("Error page retrieving (%s)", $e->getMessage()));
         }
 
@@ -277,9 +270,9 @@ class Crawler {
             return;
         }
 
-        if (!isset($this->pages[$urlToTraverse])) $this->pages[$urlToTraverse] = array();
+        if (!isset($this->pages[$url])) $this->pages[$url] = array();
 
-        $this->pages[$urlToTraverse]['status_code'] = $statusCode;
+        $this->pages[$url]['status_code'] = $statusCode;
 
         $contentType = $client->getResponse()->getHeader('Content-Type');
         if (strpos($contentType, ';') !== false) {
@@ -294,24 +287,24 @@ class Crawler {
                     $pageInfo = $provider->extract(array(
                         HtmlProvider::CONFIG_CRAWLER_PARAMETERS_HANDLER => $this->parameters,
                         HtmlProvider::CONFIG_CRAWLER_HANDLER => $crawler,
-                        HtmlProvider::CONFIG_IS_EXTERNAL_LINK_HANDLER => isset($this->pages[$urlToTraverse]['external_link']) ? $this->pages[$urlToTraverse]['external_link'] : false,
+                        HtmlProvider::CONFIG_IS_EXTERNAL_LINK_HANDLER => isset($this->pages[$url]['external_link']) ? $this->pages[$url]['external_link'] : false,
                     ));
                 } catch (\Exception $e) {
-                    error_log('Error retrieving data from link: '.$urlToTraverse.' ('.$e->getMessage().') ');
-                    $this->pages[$urlToTraverse]['dont_index'] = true;
+                    error_log('Error retrieving data from link: '.$url.' ('.$e->getMessage().') ');
+                    $this->pages[$url]['dont_index'] = true;
                 }
 
                 if ($pageInfo) {
-                    $this->pages[$urlToTraverse] = array_merge($this->pages[$urlToTraverse], $pageInfo);
-                    $this->pages[$urlToTraverse]['visited'] = true; // mark current url as visited
+                    $this->pages[$url] = array_merge($this->pages[$url], $pageInfo);
+                    $this->pages[$url]['visited'] = true; // mark current url as visited
 
-                    if (!isset($this->pages[$urlToTraverse]['external_link']) || !$this->pages[$urlToTraverse]['external_link']) { // for internal uris, get all links inside
-                        $links = $this->extractLinks($crawler, $urlToTraverse);
+                    if (!isset($this->pages[$url]['external_link']) || !$this->pages[$url]['external_link']) { // for internal uris, get all links inside
+                        $links = $this->extractLinks($crawler, $url);
                         if (count($links)) {
                             $this->crawlChildLinks($links, $depth !== false ? $depth - 1 : false);
                         }
                     } elseif ($this->parameters[self::CRAWL_EXTERNAL_LINKS] && $this->parameters[self::EXTERNAL_LINKS_DEPTH] > 0) {
-                        $links = $this->extractLinks($crawler, $urlToTraverse);
+                        $links = $this->extractLinks($crawler, $url);
                         if (count($links)) {
                             $this->crawlChildLinks($links, $this->parameters[self::EXTERNAL_LINKS_DEPTH]);
                         }
@@ -331,7 +324,8 @@ class Crawler {
     protected function extractLinks(DomCrawler &$crawler, $ancestorUrl) {
         $links = array();
 
-        if ($ancestorUrl == $this->baseUrl) { // homepage
+        // if homepage then extract links from menu parts
+        if ($ancestorUrl == $this->baseUrl) {
             // assemble menu links XPath array
             $linkSelector = $this->parameters[self::LINK_SELECTOR_PARAM];
             $menuLinksXPath = array_map(function($menuSectionSelector) use ($linkSelector) {
@@ -346,19 +340,27 @@ class Crawler {
         foreach($selectors as $selector) {
             $crawler->filterXPath($selector)->each(function(DomCrawler $node, $i) use (&$links) {
                 $nodeText = trim($node->text());
-                $nodeUrl = $node->attr('href');
+                $nodeUrl = trim($node->attr('href'));
 
                 if (strpos($nodeUrl, 'mailto:') !== false || strpos($nodeUrl, 'tel:') !== false || strpos($nodeUrl, 'phone:') !== false) return;
 
                 $url = $this->normalizeLink($nodeUrl);
 
                 if (!isset($this->pages[$url])) {
-                    $links[$url]['original_urls'][$nodeUrl] = $nodeUrl;
+                    if (!isset($links[$url])) {
+                        $links[$url] = array(
+                            'original_url' => array(),
+                            'links_text' => array(),
+                            'frequency' => 0,
+                        );
+                    }
+
+                    $links[$url]['original_url'][$nodeUrl] = $nodeUrl;
                     $links[$url]['links_text'][$nodeText] = $nodeText;
 
                     if ($this->checkIfCrawlable($nodeUrl)) {
                         if (!preg_match("@^http(s)?@", $nodeUrl)) { //not absolute link
-                            $links[$url]['absolute_url'] = $this->protocol . '://' . $this->host . $nodeUrl;
+                            $links[$url]['absolute_url'] = $this->protocol.'://'.$this->host.$nodeUrl;
                         } else {
                             $links[$url]['absolute_url'] = $nodeUrl;
                         }
@@ -370,8 +372,7 @@ class Crawler {
                     }
 
                     $links[$url]['visited'] = false;
-
-                    $links[$url]['frequency'] = isset($links[$url]['frequency']) ? $links[$url]['frequency']++ : 1; // increase the counter
+                    $links[$url]['frequency']++;
                 }
             });
         }
@@ -392,13 +393,11 @@ class Crawler {
     protected function crawlChildLinks($links, $depth) {
         if ($depth !== false && $depth == 0) return;
 
-        foreach ($links as $urlToTraverse => $info) {
-            if (($this->isPageExternal($urlToTraverse) && !$this->parameters[self::CRAWL_EXTERNAL_LINKS]) || !$this->checkIfCrawlable($urlToTraverse)) continue;
+        foreach ($links as $url => $info) {
+            if (($this->isPageExternal($url) && !$this->parameters[self::CRAWL_EXTERNAL_LINKS]) || !$this->checkIfCrawlable($url)) continue;
 
-            if (strpos($urlToTraverse, '://') === false) {
-                $url = strtr($urlToTraverse, array('//'=>'/'));
-            } else {
-                $url = $urlToTraverse;
+            if (strpos($url, '://') === false) {
+                $url = strtr($url, array('//'=>'/'));
             }
 
             if (!isset($this->pages[$url])) {
@@ -440,7 +439,12 @@ class Crawler {
 
         if (is_object($index)) {
             foreach ($this->pages as $url => $page) {
-                if (!$this->isPageValid($url, $page) || (isset($page['dont_index']) && $page['dont_index'])) continue;
+                if (!$this->isPageValid($url, $page) || (isset($page['dont_index']) && $page['dont_index'])) {
+                    if (!isset($page[Page::TITLE_KEY]) || !$page[Page::TITLE_KEY]) {
+                        $this->log('Error: title didn\'t found on page '.$url);
+                    }
+                    continue;
+                }
 
                 // find URL documents
                 $hits = $index->find('url:"'.$url.'"');
@@ -473,6 +477,7 @@ class Crawler {
             $index->commit();
 
             // if you want you can optimize your index
+            $this->log('Optimize index...');
             $index->optimize();
         }
 
@@ -592,6 +597,12 @@ class Crawler {
      */
     protected function normalizeLink($url) {
         $url = preg_replace('@#.*$@', '', $url);
+
+        // relative link
+        if (!preg_match("@^http(s)?@", $url)) {
+            $url = $this->protocol . '://' . $this->host . $url;
+        }
+
         return $url;
     }
 
@@ -601,7 +612,7 @@ class Crawler {
      * @return boolean
      */
     protected function isPageExternal($url) {
-        return (strpos($url, 'http://') !== false || strpos($url, 'https://') !== false) && strpos($url, 'http://'.$this->host) === false && strpos($url, 'https://'.$this->host) === false;
+        return preg_match("@^http(s)?@", $url) && strpos($url, $this->protocol.'://'.$this->host) === false;
     }
 
     /**
@@ -611,7 +622,7 @@ class Crawler {
      * @return boolean
      */
     protected function isPageValid($url, $page) {
-        return $url && $url != '#' && isset($page[Page::TITLE_KEY]) && $page[Page::TITLE_KEY] && $page[Page::DESCRIPTION_KEY];
+        return $url && isset($page[Page::TITLE_KEY]) && $page[Page::TITLE_KEY];
     }
 
     /**
