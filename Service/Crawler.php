@@ -130,7 +130,7 @@ class Crawler {
         $this->log('Crawling started ...');
 
         $this->pagesStatusStats = array();
-        $this->crawlPages($this->baseUrl, $this->maxDepth);
+        $this->crawlSinglePage($this->baseUrl, $this->maxDepth);
 
         $this->log('Crawling finished');
 
@@ -411,9 +411,18 @@ class Crawler {
             }
 
             if (!$this->pages[$url]['visited'] && (!isset($this->pages[$url]['dont_visit']) || !$this->pages[$url]['dont_visit'])) { //traverse those that not visited yet
-                $this->crawlPages($this->normalizeLink($links[$url]['absolute_url']), $depth);
+                $this->crawlSinglePage($this->normalizeLink($links[$url]['absolute_url']), $depth);
             }
         }
+    }
+
+    /**
+     * crawl single page
+     * @param string $link
+     * @param int $depth
+     */
+    protected function crawlSinglePage($link, $depth) {
+        $this->crawlPages($link, $depth);
     }
 
     /**
