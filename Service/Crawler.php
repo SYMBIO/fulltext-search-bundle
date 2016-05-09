@@ -87,8 +87,10 @@ class Crawler {
      * @param string $baseUrl URL to crawl
      * @param integer $maxDepth Maximal depth of crawling
      * @param boolean $force Force to rewrite all documents
+     * @param boolean $clean Whether to do index cleaning
+     * @param boolean $indexing Whether to do website indexing
      */
-    public function createIndex($baseUrl, $maxDepth = false, $force = true, $clean = true) {
+    public function createIndex($baseUrl, $maxDepth = false, $force = true, $clean = true, $indexing = true) {
         \error_reporting(E_ALL & ~E_NOTICE);
 
         // first remove from index all non-existing or exhausted pages
@@ -135,7 +137,9 @@ class Crawler {
         $this->log('Crawling finished');
 
         // create index from pages array
-        $this->indexPages($force);
+        if ($indexing) {
+            $this->indexPages($force);
+        }
 
         // print status codes stats
         $pagesStatusStats = array();
