@@ -171,7 +171,7 @@ class HtmlProvider extends Provider
             foreach (($this->isExternal ? array('html/body') : $this->parameters[Crawler::BODY_SECTIONS_PARAM]) as $section) {
                 $selector = $section . (!$this->isExternal ? '/node()[not(contains(@class, "'.$this->parameters[Crawler::NOINDEX_CLASS_PARAM].'"))]' : '');
                 if ($this->crawler->filterXPath($selector)->count()) {
-                    $this->crawler->filterXPath($selector)->each(function (DomCrawler $node, $i) {
+                    $this->crawler->filterXPath($selector)->each(function (DomCrawler $node, $i) use ($selector) {
                         $this->extractBodyNode($node);
                     });
                 }
@@ -193,9 +193,11 @@ class HtmlProvider extends Provider
         $content = trim($isDomCrawler ? $node->text() : $node->textContent);
 
         if ($content) {
+            if ($isDomCrawler && $node->getNode(0) instanceof \DOMComment) return;
+
             $classname = $isDomCrawler ? $node->attr('class') : $node->getAttribute('class');
 
-            if (strpos($classname, $this->parameters[Crawler::NOINDEX_CLASS_PARAM]) === false) {
+            if (!$classname || strpos($classname, $this->parameters[Crawler::NOINDEX_CLASS_PARAM]) === false) {
                 $html = $isDomCrawler ? $node->html() : $this->getNodeHtml($node);
 
                 if (strpos($html, $this->parameters[Crawler::NOINDEX_CLASS_PARAM])) {
