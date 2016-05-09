@@ -98,7 +98,9 @@ class Crawler {
             $this->cleanIndex();
         }
 
-        $this->log(sprintf('Generate index "%s ...', $this->indexName));
+        if ($indexing) {
+            $this->log(sprintf('Generate index "%s" ...', $this->indexName));
+        }
 
         // http protocol not included, prepend it to the base url
         if (strpos($baseUrl, 'http') === false) {
@@ -148,7 +150,9 @@ class Crawler {
         }
         $this->log(sprintf('Status codes: '.implode(', ', $pagesStatusStats)));
 
-        $this->log('Generating finished');
+        if ($indexing) {
+            $this->log('Generating finished');
+        }
     }
 
     /**
