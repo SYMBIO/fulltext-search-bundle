@@ -26,7 +26,7 @@ class Configuration implements ConfigurationInterface
     public function getConfigTreeBuilder()
     {
         $treeBuilder = new TreeBuilder();
-        $rootNode = $treeBuilder->root('symbio_fulltext_search');
+        $rootNode = $treeBuilder->root(SymbioFulltextSearchExtension::ROOT_NAME);
 
         $rootNode
             ->children()

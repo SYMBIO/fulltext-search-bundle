@@ -17,6 +17,8 @@ use Symfony\Component\DependencyInjection\Loader;
  */
 class SymbioFulltextSearchExtension extends Extension
 {
+    const ROOT_NAME = 'symbio_fulltext_search';
+
     /**
      * {@inheritdoc}
      */
@@ -29,22 +31,22 @@ class SymbioFulltextSearchExtension extends Extension
         $loader->load('services.yml');
         $loader->load('parameters.yml');
 
-        $container->setParameter('symbio_fulltext_search.'.Crawler::USER_AGENT_PARAM, $config[Crawler::USER_AGENT_PARAM]);
-        $container->setParameter('symbio_fulltext_search.'.Crawler::TITLE_CLASS_PARAM, $config[Crawler::TITLE_CLASS_PARAM]);
-        $container->setParameter('symbio_fulltext_search.'.Search::ITEMS_ON_PAGE_PARAM, $config[Search::ITEMS_ON_PAGE_PARAM]);
-        $container->setParameter('symbio_fulltext_search.'.Crawler::DEFAULT_IMAGE_PARAM, $config[Crawler::DEFAULT_IMAGE_PARAM]);
-        $container->setParameter('symbio_fulltext_search.'.Crawler::DEFAULT_INDEX_PARAM, $config[Crawler::DEFAULT_INDEX_PARAM]);
-        $container->setParameter('symbio_fulltext_search.'.Crawler::PAGE_ID_PARAM, $config[Crawler::PAGE_ID_PARAM]);
-        $container->setParameter('symbio_fulltext_search.'.Crawler::ROUTE_NAME_PARAM, $config[Crawler::ROUTE_NAME_PARAM]);
-        $container->setParameter('symbio_fulltext_search.'.Crawler::MENU_SECTIONS_PARAM, $config[Crawler::MENU_SECTIONS_PARAM]);
-        $container->setParameter('symbio_fulltext_search.'.Crawler::BODY_SECTIONS_PARAM, $config[Crawler::BODY_SECTIONS_PARAM]);
-        $container->setParameter('symbio_fulltext_search.'.Crawler::TITLE_TAGS_PARAM, $config[Crawler::TITLE_TAGS_PARAM]);
-        $container->setParameter('symbio_fulltext_search.'.Crawler::BOOST_PARAM, $config[Crawler::BOOST_PARAM]);
-        $container->setParameter('symbio_fulltext_search.'.Crawler::LINK_SELECTOR_PARAM, $config[Crawler::LINK_SELECTOR_PARAM]);
-        $container->setParameter('symbio_fulltext_search.'.Crawler::CRAWL_EXTERNAL_LINKS, $config[Crawler::CRAWL_EXTERNAL_LINKS]);
-        $container->setParameter('symbio_fulltext_search.'.Crawler::EXTERNAL_LINKS_DEPTH, $config[Crawler::EXTERNAL_LINKS_DEPTH]);
-        $container->setParameter('symbio_fulltext_search.'.Crawler::NOINDEX_CLASS_PARAM, $config[Crawler::NOINDEX_CLASS_PARAM]);
-        $container->setParameter('symbio_fulltext_search.'.Crawler::WEB_DIR, $config[Crawler::WEB_DIR]);
-        $container->setParameter('symbio_fulltext_search.'.Crawler::IMAGE_URI, $config[Crawler::IMAGE_URI]);
+        $container->setParameter(self::ROOT_NAME . '.' . Crawler::USER_AGENT_PARAM, $config[Crawler::USER_AGENT_PARAM]);
+        $container->setParameter(self::ROOT_NAME . '.' . Crawler::TITLE_CLASS_PARAM, $config[Crawler::TITLE_CLASS_PARAM]);
+        $container->setParameter(self::ROOT_NAME . '.' . Search::ITEMS_ON_PAGE_PARAM, $config[Search::ITEMS_ON_PAGE_PARAM]);
+        $container->setParameter(self::ROOT_NAME . '.' . Crawler::DEFAULT_IMAGE_PARAM, $config[Crawler::DEFAULT_IMAGE_PARAM]);
+        $container->setParameter(self::ROOT_NAME . '.' . Crawler::DEFAULT_INDEX_PARAM, $config[Crawler::DEFAULT_INDEX_PARAM]);
+        $container->setParameter(self::ROOT_NAME . '.' . Crawler::PAGE_ID_PARAM, $config[Crawler::PAGE_ID_PARAM]);
+        $container->setParameter(self::ROOT_NAME . '.' . Crawler::ROUTE_NAME_PARAM, $config[Crawler::ROUTE_NAME_PARAM]);
+        $container->setParameter(self::ROOT_NAME . '.' . Crawler::MENU_SECTIONS_PARAM, $config[Crawler::MENU_SECTIONS_PARAM]);
+        $container->setParameter(self::ROOT_NAME . '.' . Crawler::BODY_SECTIONS_PARAM, $config[Crawler::BODY_SECTIONS_PARAM]);
+        $container->setParameter(self::ROOT_NAME . '.' . Crawler::TITLE_TAGS_PARAM, $config[Crawler::TITLE_TAGS_PARAM]);
+        $container->setParameter(self::ROOT_NAME . '.' . Crawler::BOOST_PARAM, $config[Crawler::BOOST_PARAM]);
+        $container->setParameter(self::ROOT_NAME . '.' . Crawler::LINK_SELECTOR_PARAM, $config[Crawler::LINK_SELECTOR_PARAM]);
+        $container->setParameter(self::ROOT_NAME . '.' . Crawler::CRAWL_EXTERNAL_LINKS, $config[Crawler::CRAWL_EXTERNAL_LINKS]);
+        $container->setParameter(self::ROOT_NAME . '.' . Crawler::EXTERNAL_LINKS_DEPTH, $config[Crawler::EXTERNAL_LINKS_DEPTH]);
+        $container->setParameter(self::ROOT_NAME . '.' . Crawler::NOINDEX_CLASS_PARAM, $config[Crawler::NOINDEX_CLASS_PARAM]);
+        $container->setParameter(self::ROOT_NAME . '.' . Crawler::WEB_DIR, $config[Crawler::WEB_DIR]);
+        $container->setParameter(self::ROOT_NAME . '.' . Crawler::IMAGE_URI, $config[Crawler::IMAGE_URI]);
     }
 }
