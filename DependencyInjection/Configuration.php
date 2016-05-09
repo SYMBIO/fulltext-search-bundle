@@ -14,6 +14,12 @@ use Symfony\Component\Config\Definition\ConfigurationInterface;
  */
 class Configuration implements ConfigurationInterface
 {
+    const USER_AGENT = 'Fulltext search crawler by SYMBIO';
+    const TITLE_CLASS = 'crawler__title';
+    const NOINDEX_CLASS = 'crawler__noindex';
+    const INDEX_NAME = 'web';
+    const ITEMS_ON_PAGE = 10;
+
     /**
      * {@inheritdoc}
      */
@@ -25,15 +31,15 @@ class Configuration implements ConfigurationInterface
         $rootNode
             ->children()
                 // crawler user agent info
-                ->scalarNode(Crawler::USER_AGENT_PARAM)->defaultValue('Fulltext search crawler by SYMBIO')->end()
+                ->scalarNode(Crawler::USER_AGENT_PARAM)->defaultValue(self::USER_AGENT)->end()
                 // page title element class
-                ->scalarNode(Crawler::TITLE_CLASS_PARAM)->defaultValue('crawler__title')->end()
+                ->scalarNode(Crawler::TITLE_CLASS_PARAM)->defaultValue(self::TITLE_CLASS)->end()
                 // render count of items on the page
-                ->scalarNode(Search::ITEMS_ON_PAGE_PARAM)->defaultValue(10)->end()
+                ->scalarNode(Search::ITEMS_ON_PAGE_PARAM)->defaultValue(self::ITEMS_ON_PAGE)->end()
                 // default image URL
                 ->scalarNode(Crawler::DEFAULT_IMAGE_PARAM)->defaultValue('')->end()
                 // default index name
-                ->scalarNode(Crawler::DEFAULT_INDEX_PARAM)->defaultValue('web')->end()
+                ->scalarNode(Crawler::DEFAULT_INDEX_PARAM)->defaultValue(self::INDEX_NAME)->end()
                 // XPath to element with route
                 ->scalarNode(Crawler::LINK_SELECTOR_PARAM)->defaultValue('a[not(@rel="nofollow")]')->end()
                 // XPath to element with page ID
@@ -45,7 +51,7 @@ class Configuration implements ConfigurationInterface
                 // depth of crawling external links
                 ->scalarNode(Crawler::EXTERNAL_LINKS_DEPTH)->defaultValue(0)->end()
                 // class tells to crawler dont index this page
-                ->scalarNode(Crawler::NOINDEX_CLASS_PARAM)->defaultValue('crawler__noindex')->end()
+                ->scalarNode(Crawler::NOINDEX_CLASS_PARAM)->defaultValue(self::NOINDEX_CLASS)->end()
                 // name of document root directory
                 ->scalarNode(Crawler::WEB_DIR)->defaultValue('web')->end()
                 // URI to fulltext image store
