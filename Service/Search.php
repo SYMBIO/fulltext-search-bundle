@@ -76,18 +76,22 @@ class Search
 
 		$query = new Boolean();
 		foreach($expressions as $expression) {
-			// whole expression
-			$query->addSubquery(QueryParser::parse('"'.$expression.'"', 'utf-8'));
-			// expression words
-			$expressionWords = explode(' ', $expression);
-			if (count($expressionWords) > 1) {
-				foreach($expressionWords as $expressionWord) {
-					if (mb_strlen($expressionWord, 'utf-8') > 2 && !in_array($expressionWord, $queryWords)) {
-						$queryWords[] = $expressionWord;
-						$query->addSubquery(QueryParser::parse($expressionWord.'*', 'utf-8'));
-					}
-				}
-			}
+            // more words in expression
+            if (count($expressionWords = explode(' ', $expression)) > 1) {
+                // whole expression
+                $query->addSubquery(QueryParser::parse('"'.$expression.'"', 'utf-8'));
+                // expression words
+                foreach($expressionWords as $expressionWord) {
+                    if (mb_strlen($expressionWord, 'utf-8') > 2 && !in_array($expressionWord, $queryWords)) {
+                        $queryWords[] = $expressionWord;
+                        $query->addSubquery(QueryParser::parse($expressionWord.'*', 'utf-8'));
+                    }
+                }
+            }
+            // one-word expression
+            else {
+                $query->addSubquery(QueryParser::parse($expression.'*', 'utf-8'));
+            }
 		}
 
 		// specificke podminky do query
