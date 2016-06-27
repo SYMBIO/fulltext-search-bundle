@@ -7,6 +7,7 @@ use Symfony\Component\HttpFoundation\Session\Session;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use ZendSearch\Lucene\Analysis\Analyzer\Analyzer;
 use ZendSearch\Lucene\Analysis\Analyzer\Common\Utf8\CaseInsensitive;
+use ZendSearch\Lucene\Search\Query\Boolean;
 use ZendSearch\Lucene\Search\QueryParser;
 
 class Search
@@ -71,7 +72,23 @@ class Search
 			$expressions[] = $expressionTranslit;
 		}
 
-        $query = QueryParser::parse('("'.implode('" OR "', $expressions).'")');
+		$queryWords = array();
+
+		$query = new Boolean();
+		foreach($expressions as $expression) {
+			// whole expression
+			$query->addSubquery(QueryParser::parse('"'.$expression.'"', 'utf-8'));
+			// expression words
+			$expressionWords = explode(' ', $expression);
+			if (count($expressionWords) > 1) {
+				foreach($expressionWords as $expressionWord) {
+					if (mb_strlen($expressionWord, 'utf-8') > 2 && !in_array($expressionWord, $queryWords)) {
+						$queryWords[] = $expressionWord;
+						$query->addSubquery(QueryParser::parse($expressionWord.'*', 'utf-8'));
+					}
+				}
+			}
+		}
 
 		// specificke podminky do query
 		if (is_array($conditions) && count($conditions)) {
