@@ -252,6 +252,51 @@ class Crawler {
     }
 
     /**
+     * crawl url and return pages
+     * @param string $baseUrl URL to crawl
+     * @return array
+     */
+    public function extractPages($baseUrl) {
+        \error_reporting(E_ALL & ~E_NOTICE);
+
+        // http protocol not included, prepend it to the base url
+        if (strpos($baseUrl, 'http') === false) {
+            $baseUrl = 'http://' . $baseUrl;
+        }
+
+        $this->baseUrl = $baseUrl;
+        $this->protocol = substr($baseUrl, 0, strpos($baseUrl, ':'));
+
+        $host = substr($baseUrl, strlen($this->protocol.'://'));
+        $this->host = strpos($host, '/') !== false ? substr($host, 0, strpos($host, '/')) : $host;
+
+        if ($this->baseUrl == $this->protocol.'://'.$this->host) {
+            $this->baseUrl .= '/';
+        }
+
+        $this->pages = array();
+
+        // initialize first element in the pages
+        $this->pages[$this->baseUrl] = array(
+            'links_text' => array('BASE_URL'),
+            'absolute_url' => $this->baseUrl,
+            'frequency' => 1,
+            'visited' => false,
+            'external_link' => false,
+            'original_urls' => array($this->baseUrl),
+        );
+
+        // crawl website into pages array
+        $this->log('Crawling started ...');
+
+        $this->crawlSinglePage($this->baseUrl, 2);
+
+        $this->log('Crawling finished');
+
+        return $this->pages;
+    }
+
+    /**
      * crawling single url after checking the depth value
      * @param string $url
      * @param int $depth
