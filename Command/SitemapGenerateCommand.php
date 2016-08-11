@@ -48,18 +48,22 @@ class SitemapGenerateCommand extends ContainerAwareCommand
         $output->writeln(sprintf('Crawling finished at %s', date('d.m.Y H:i:s')));
 
         // generate XML
-        $output->writeln(sprintf('Generate sitemap to "%s"', $sitemapPath));
+        if ($pages && is_array($pages) && count($pages)) {
+            $output->writeln(sprintf('Generate sitemap to "%s"', $sitemapPath));
 
-        $sitemapContent = '<?xml version="1.0" encoding="UTF-8"?>
+            $sitemapContent = '<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
 ';
-        foreach($pages as $pageUrl => $pageInfo) {
-            $sitemapContent .= sprintf("<url><loc>%s</loc></url>\r\n", $pageUrl);
+            foreach($pages as $pageUrl => $pageInfo) {
+                $sitemapContent .= sprintf("<url><loc>%s</loc></url>\r\n", $pageUrl);
+            }
+            $sitemapContent .= '</urlset>';
+
+            // store XML
+            file_put_contents($sitemapPath, $sitemapContent);
+
+            $output->writeln('Generating finished');
+        } else {
+            $output->writeln('No pages crawled - sitemap generating failed');
         }
-        $sitemapContent .= '</urlset>';
-
-        // store XML
-        file_put_contents($sitemapPath, $sitemapContent);
-
-        $output->writeln('Generating finished');
     }}
