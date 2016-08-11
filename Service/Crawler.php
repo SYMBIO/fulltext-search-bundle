@@ -289,7 +289,7 @@ class Crawler {
         // crawl website into pages array
         $this->log('Crawling started ...');
 
-        $this->crawlSinglePage($this->baseUrl, 2);
+        $this->crawlSinglePage($this->baseUrl, false);
 
         $this->log('Crawling finished');
 
