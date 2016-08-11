@@ -674,7 +674,7 @@ class Crawler {
      * @return boolean
      */
     protected function isPageExternal($url) {
-        return preg_match("@^http(s)?@", $url) && strpos($url, $this->protocol.'://'.$this->host) === false;
+        return preg_match("@^http(s)?@", $url) && strpos($url, $this->protocol.'://'.$this->host) !== 0;
     }
 
     /**
