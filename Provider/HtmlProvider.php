@@ -101,7 +101,7 @@ class HtmlProvider extends Provider
                 }
             }
         } catch(\Exception $e) {
-            throw new \Exception('Extracting title in HTML provider - '.$e->getMessage());
+            throw new \Exception(sprintf('Extracting title in HTML provider - %s: %s (%s)', $e->getFile(), $e->getLine(), $e->getMessage()));
         }
     }
 
@@ -117,7 +117,7 @@ class HtmlProvider extends Provider
                 }
             }
         } catch(\Exception $e) {
-            throw new \Exception('Extracting description in HTML provider - '.$e->getMessage());
+            throw new \Exception(sprintf('Extracting description in HTML provider - %s: %s (%s)', $e->getFile(), $e->getLine(), $e->getMessage()));
         }
     }
 
@@ -159,7 +159,7 @@ class HtmlProvider extends Provider
                 }
             }
         } catch(\Exception $e) {
-            throw new \Exception('Extracting headlines in HTML provider - '.$e->getMessage());
+            throw new \Exception(sprintf('Extracting headlines in HTML provider - %s: %s (%s)', $e->getFile(), $e->getLine(), $e->getMessage()));
         }
     }
 
@@ -177,7 +177,7 @@ class HtmlProvider extends Provider
                 }
             }
         } catch(\Exception $e) {
-            throw new \Exception('Extracting body in HTML provider - '.$e->getMessage());
+            throw new \Exception(sprintf('Extracting body in HTML provider - %s: %s (%s)', $e->getFile(), $e->getLine(), $e->getMessage()));
         }
     }
 
@@ -272,7 +272,7 @@ class HtmlProvider extends Provider
                 $this->getPage()->setImage($this->parameters[Crawler::DEFAULT_IMAGE_PARAM]);
             }
         } catch(\Exception $e) {
-            throw new \Exception('Extracting image in HTML provider - '.$e->getMessage());
+            throw new \Exception(sprintf('Extracting image in HTML provider - %s: %s (%s)', $e->getFile(), $e->getLine(), $e->getMessage()));
         }
     }
 
@@ -286,7 +286,7 @@ class HtmlProvider extends Provider
                 $this->getPage()->setPageId(trim($this->crawler->filterXPath($selector)->text()));
             }
         } catch(\Exception $e) {
-            throw new \Exception('Extracting field page_id in HTML provider - '.$e->getMessage());
+            throw new \Exception(sprintf('Extracting field page_id in HTML provider - %s: %s (%s)', $e->getFile(), $e->getLine(), $e->getMessage()));
         }
     }
 
@@ -300,7 +300,7 @@ class HtmlProvider extends Provider
                 $this->getPage()->setRouteName(trim($this->crawler->filterXPath($selector)->text()));
             }
         } catch(\Exception $e) {
-            throw new \Exception('Extracting field route_name in HTML provider - '.$e->getMessage());
+            throw new \Exception(sprintf('Extracting field route_name in HTML provider - %s: %s (%s)', $e->getFile(), $e->getLine(), $e->getMessage()));
         }
     }
 
