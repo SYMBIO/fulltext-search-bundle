@@ -190,7 +190,7 @@ class HtmlProvider extends Provider
 
         $isDomCrawler = $node instanceof DomCrawler;
 
-        $content = trim($isDomCrawler ? $this->getNodeText($node) : $node->textContent);
+        $content = trim($isDomCrawler ? $node->text() : $node->textContent);
 
         if ($content) {
             if ($isDomCrawler && $node->getNode(0) instanceof \DOMComment) return;
