@@ -50,7 +50,7 @@ class HtmlProvider extends Provider
                     if ($this->crawler->filterXPath($selector)->count()) {
                         $this->crawler->filterXPath($selector)->each(function(DomCrawler $node, $i) {
                             if (!$this->getPage()->hasTitle()) {
-                                $this->getPage()->setTitle(trim($node->text()));
+                                $this->getPage()->setTitle(trim($this->getNodeText($node)));
                             }
                         });
                     }
@@ -63,7 +63,7 @@ class HtmlProvider extends Provider
                         if ($this->crawler->filterXPath($selector)->count()) {
                             $this->crawler->filterXPath($selector)->each(function(DomCrawler $node, $i) {
                                 if (!$this->getPage()->hasTitle()) {
-                                    $this->getPage()->setTitle(trim($node->text()));
+                                    $this->getPage()->setTitle(trim($this->getNodeText($node)));
                                 }
                             });
                         }
@@ -96,7 +96,7 @@ class HtmlProvider extends Provider
                 // find title tag
                 if (!$this->getPage()->hasTitle() && $this->crawler->filterXPath('html/head/title')->count()) {
                     $this->crawler->filterXPath('html/head/title')->each(function (DomCrawler $node, $i) {
-                        $this->getPage()->setTitle(trim($node->text()));
+                        $this->getPage()->setTitle(trim($this->getNodeText($node)));
                     });
                 }
             }
@@ -137,7 +137,7 @@ class HtmlProvider extends Provider
                                     if ($this->crawler->filterXPath($selector)->count()) {
                                         $this->crawler->filterXPath($selector)->each(function (DomCrawler $node, $i) use ($tagIndex) {
                                             $tag = $this->parameters[Crawler::TITLE_TAGS_PARAM][$tagIndex+1];
-                                            $this->getPage()->setHeadline($tag, trim(html_entity_decode($node->text())));
+                                            $this->getPage()->setHeadline($tag, trim(html_entity_decode($this->getNodeText($node))));
                                         });
                                     }
                                 }
@@ -153,7 +153,7 @@ class HtmlProvider extends Provider
 
                     if ($this->crawler->filterXPath($selector)->count()) {
                         $this->crawler->filterXPath($selector)->each(function (DomCrawler $node, $i) use ($tag) {
-                            $this->getPage()->setHeadline($tag, trim(html_entity_decode($node->text())));
+                            $this->getPage()->setHeadline($tag, trim(html_entity_decode($this->getNodeText($node))));
                         });
                     }
                 }
@@ -190,7 +190,7 @@ class HtmlProvider extends Provider
 
         $isDomCrawler = $node instanceof DomCrawler;
 
-        $content = trim($isDomCrawler ? $node->text() : $node->textContent);
+        $content = trim($isDomCrawler ? $this->getNodeText($node) : $node->textContent);
 
         if ($content) {
             if ($isDomCrawler && $node->getNode(0) instanceof \DOMComment) return;
@@ -314,5 +314,22 @@ class HtmlProvider extends Provider
                 break;
             }
         }
+    }
+
+    /**
+     * @param DomCrawler $node
+     * @return string
+     */
+    protected function getNodeText(DomCrawler $node)
+    {
+        $content = $node->html();
+
+        $content = strtr($content, [
+            '<br>' => ' ',
+            '<br/>' => ' ',
+            '&nbsp;' => ' ',
+        ]);
+
+        return strip_tags($content);
     }
 }
