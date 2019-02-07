@@ -82,7 +82,10 @@ class Search
                 $query->addSubquery(QueryParser::parse('"'.$expression.'"', 'utf-8'));
                 // expression words
                 foreach($expressionWords as $expressionWord) {
-                    if (mb_strlen($expressionWord, 'utf-8') > 2 && !in_array($expressionWord, $queryWords)) {
+                    if (
+                        !in_array($expressionWord, $queryWords)
+                        && $this->isWordValid($expressionWord)
+                    ) {
                         $queryWords[] = $expressionWord;
                         $query->addSubquery(QueryParser::parse($expressionWord.'*', 'utf-8'));
                     }
@@ -119,7 +122,22 @@ class Search
 		return $query;
 	}
 
-	public function prepareBreadcrumbsPages($articles)
+    protected function isWordValid($word)
+    {
+        if (
+            is_numeric($word)
+            ||
+            mb_strlen($word, 'utf-8') < 3
+            ||
+            mb_strlen(preg_replace('/[0-9]+/', '', $word)) < 3
+        ) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public function prepareBreadcrumbsPages($articles)
 	{
 		$parents = array();
 
