@@ -56,6 +56,8 @@ class Configuration implements ConfigurationInterface
                 ->scalarNode(Crawler::WEB_DIR)->defaultValue('web')->end()
                 // URI to fulltext image store
                 ->scalarNode(Crawler::IMAGE_URI)->defaultValue('/uploads/symbio_fulltext_search')->end()
+                // max number of result items
+                ->scalarNode(Crawler::TERMS_PER_QUERY_LIMIT)->defaultValue(1024)->end()
                 // XPath to elements with menu
                 ->arrayNode(Crawler::MENU_SECTIONS_PARAM)
                     ->beforeNormalization()

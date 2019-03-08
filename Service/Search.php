@@ -17,15 +17,26 @@ class Search
 
 	const QUERY_HANDLER = 'orangegate.fulltext_search.query';
 
+	/** @var \AppKernel */
 	protected $kernel;
+
+	/** @var IndexManager */
     protected $indexManager;
 
-	public function __construct(\AppKernel $kernel, IndexManager $indexManager)
+    /**
+     * Search constructor.
+     * @param \AppKernel $kernel
+     * @param IndexManager $indexManager
+     * @param integer|null $termsPerQueryLimit
+     */
+	public function __construct(\AppKernel $kernel, IndexManager $indexManager, $termsPerQueryLimit = null)
 	{
         $this->kernel = $kernel;
         $this->indexManager = $indexManager;
 
-        Lucene::setTermsPerQueryLimit(2048);
+        if ($termsPerQueryLimit) {
+            Lucene::setTermsPerQueryLimit($termsPerQueryLimit);
+        }
 	}
 
 	public function search($expression, $page = 1, $conditions = null, $indexName = null)

@@ -48,5 +48,6 @@ class SymbioFulltextSearchExtension extends Extension
         $container->setParameter(self::ROOT_NAME . '.' . Crawler::NOINDEX_CLASS_PARAM, $config[Crawler::NOINDEX_CLASS_PARAM]);
         $container->setParameter(self::ROOT_NAME . '.' . Crawler::WEB_DIR, $config[Crawler::WEB_DIR]);
         $container->setParameter(self::ROOT_NAME . '.' . Crawler::IMAGE_URI, $config[Crawler::IMAGE_URI]);
+        $container->setParameter(self::ROOT_NAME . '.' . Crawler::TERMS_PER_QUERY_LIMIT, $config[Crawler::TERMS_PER_QUERY_LIMIT]);
     }
 }

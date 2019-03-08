@@ -4,6 +4,7 @@ services:
         arguments:
             - @kernel
             - @symbio_fulltext_search.index_manager
+            - %symbio_fulltext_search.terms_per_query_limit%
 
     symbio_fulltext_search.crawler:
         class: %symbio_fulltext_search.crawler.class%

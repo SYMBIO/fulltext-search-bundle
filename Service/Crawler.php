@@ -28,6 +28,8 @@ class Crawler {
     const PAGE_ID_PARAM = 'page_id';
     const ROUTE_NAME_PARAM = 'route_name';
 
+    const TERMS_PER_QUERY_LIMIT = 'terms_per_query_limit';
+
     const ROOT_DIR = 'root_dir';
     const WEB_DIR = 'web_dir';
     const IMAGE_URI = 'image_uri';
