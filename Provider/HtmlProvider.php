@@ -48,11 +48,13 @@ class HtmlProvider extends Provider
                 if ($this->parameters[Crawler::TITLE_CLASS_PARAM]) {
                     $selector = 'html/body//*/*[contains(@class, "'.$this->parameters[Crawler::TITLE_CLASS_PARAM].'")]';
                     if ($this->crawler->filterXPath($selector)->count()) {
-                        $this->crawler->filterXPath($selector)->each(function(DomCrawler $node, $i) {
-                            if (!$this->getPage()->hasTitle()) {
-                                $this->getPage()->setTitle(trim($this->getNodeText($node)));
-                            }
+                        $titleChunks = array();
+                        $this->crawler->filterXPath($selector)->each(function(DomCrawler $node, $i) use ($titleChunks) {
+                            $titleChunks[] = trim($this->getNodeText($node));
                         });
+                        if ($titleChunks) {
+                            $this->getPage()->setTitle(implode(' - ', $titleChunks));
+                        }
                     }
                 }
 
