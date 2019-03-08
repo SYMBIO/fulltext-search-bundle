@@ -7,6 +7,7 @@ use Symfony\Component\HttpFoundation\Session\Session;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use ZendSearch\Lucene\Analysis\Analyzer\Analyzer;
 use ZendSearch\Lucene\Analysis\Analyzer\Common\Utf8\CaseInsensitive;
+use ZendSearch\Lucene\Exception\InvalidArgumentException;
 use ZendSearch\Lucene\Lucene;
 use ZendSearch\Lucene\Search\Query\Boolean;
 use ZendSearch\Lucene\Search\QueryParser;
@@ -54,7 +55,13 @@ class Search
 
 			Analyzer::setDefault(New CaseInsensitive());
 			$query = $this->prepareQuery($expression, $conditions);
-			$results = $index->find($query);
+
+			try {
+                $results = $index->find($query);
+            } catch(InvalidArgumentException $e) {
+                $results = array();
+                $resultErrorMessage = $e->getMessage();
+            }
 
 			// strankovani
 			$paginator = $this->kernel->getContainer()->get('knp_paginator');
@@ -68,6 +75,7 @@ class Search
 				'expression' => $expression,
 				'pagination' => $pagination,
 				'pgdata' => $pagination->getPaginationData(),
+                'errorMessage' => isset($resultErrorMessage) ? $resultErrorMessage : null,
 			);
 		}
 
