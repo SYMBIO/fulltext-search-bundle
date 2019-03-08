@@ -7,6 +7,7 @@ use Symfony\Component\HttpFoundation\Session\Session;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use ZendSearch\Lucene\Analysis\Analyzer\Analyzer;
 use ZendSearch\Lucene\Analysis\Analyzer\Common\Utf8\CaseInsensitive;
+use ZendSearch\Lucene\Lucene;
 use ZendSearch\Lucene\Search\Query\Boolean;
 use ZendSearch\Lucene\Search\QueryParser;
 
@@ -21,8 +22,10 @@ class Search
 
 	public function __construct(\AppKernel $kernel, IndexManager $indexManager)
 	{
-		$this->kernel = $kernel;
+        $this->kernel = $kernel;
         $this->indexManager = $indexManager;
+
+        Lucene::setTermsPerQueryLimit(2048);
 	}
 
 	public function search($expression, $page = 1, $conditions = null, $indexName = null)
