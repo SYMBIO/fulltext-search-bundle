@@ -185,6 +185,9 @@ class Crawler {
                     try {
                         @$crawler = $client->request('GET', $document->url);
                         $status = $client->getResponse()->getStatus();
+                        if (!self::compareUris($document->url, $client->getRequest()->getUri())) {
+                            $status = 302;
+                        }
                     } catch(\Exception $e) {
                         $status = 500;
                     }
@@ -312,6 +315,9 @@ class Crawler {
         try {
             $crawler = $client->request('GET', $url);
             $statusCode = $client->getResponse()->getStatus();
+            if (!self::compareUris($url, $client->getRequest()->getUri())) {
+                $statusCode = 302;
+            }
             $this->log(sprintf("%s: %s", $statusCode, $url));
         } catch(\Exception $e) {
             $statusCode = 400;
@@ -367,6 +373,39 @@ class Crawler {
                 }
                 break;
         }
+    }
+
+    /**
+     * @param string $uri1
+     * @param string $uri2
+     * @return bool
+     */
+    protected static function compareUris($uri1, $uri2)
+    {
+        if ($uri1 === $uri2) {
+            return true;
+        }
+
+        $uri1 = strtr($uri1, array('http://' => '','https://' => ''));
+        $uri2 = strtr($uri2, array('http://' => '','https://' => ''));
+
+        if ($uri1 === $uri2) {
+            return true;
+        }
+
+        if (strpos($uri1, '/') !== false) {
+            $uri1 = substr($uri1, strpos($uri1, '/'));
+        }
+
+        if (strpos($uri2, '/') !== false) {
+            $uri2 = substr($uri2, strpos($uri2, '/'));
+        }
+
+        if ($uri1 === $uri2) {
+            return true;
+        }
+
+        return false;
     }
 
     /**
