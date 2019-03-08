@@ -187,9 +187,9 @@ class Crawler {
                         $status = 500;
                     }
 
-                    $this->log($status . ($status >= 400 ? ' REMOVE' : '') . ':' . $documentId . ':' . $document->url);
+                    $this->log($status . ($status >= 300 ? ' REMOVE' : '') . ':' . $documentId . ':' . $document->url);
 
-                    if ($status >= 400) {
+                    if ($status >= 300) {
                         $index->delete($documentId);
                         $counter++;
                     }
@@ -319,7 +319,7 @@ class Crawler {
 
         $this->setPageStatusStats($statusCode);
 
-        if ($statusCode >= 400) {
+        if ($statusCode >= 300) {
             return;
         }
 
