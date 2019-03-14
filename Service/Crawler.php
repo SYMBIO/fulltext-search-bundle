@@ -27,8 +27,8 @@ class Crawler {
     const NOINDEX_CLASS_PARAM = 'noindex_class';
     const PAGE_ID_PARAM = 'page_id';
     const ROUTE_NAME_PARAM = 'route_name';
-
     const TERMS_PER_QUERY_LIMIT = 'terms_per_query_limit';
+    const FAILURE_EMAILS = 'failure_emails';
 
     const ROOT_DIR = 'root_dir';
     const WEB_DIR = 'web_dir';

@@ -61,4 +61,25 @@ class IndexManager
             $this->luceneSearch->setIndex($indexName, $indexPath);
         }
     }
+
+    /**
+     * @param string $indexName
+     * @return bool
+     * @throws \Exception
+     */
+    public function isUpToDate($indexName)
+    {
+        $indexPath = $this->kernel->getRootDir() . '/../data/search/' . $indexName;
+
+        if (file_exists($indexPath)) {
+            foreach (glob("$indexPath/*.cfs") as $indexFile) {
+                $changeDate = (new \DateTime())->setTimestamp(filemtime($indexFile));
+                if ($changeDate->format('d.m.Y') == (new \DateTime())->format('d.m.Y')) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
 }

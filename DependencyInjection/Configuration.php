@@ -107,6 +107,15 @@ class Configuration implements ConfigurationInterface
                     ->requiresAtLeastOneElement()
                     ->prototype('scalar')->end()
                 ->end()
+                // failure emails
+                ->arrayNode(Crawler::FAILURE_EMAILS)
+                    ->beforeNormalization()
+                        ->ifString()
+                        ->then(function($v) { return preg_split('/\s*,\s*/', $v); })
+                    ->end()
+                    ->canBeUnset()
+                    ->prototype('scalar')->end()
+                ->end()
             ->end()
         ;
 

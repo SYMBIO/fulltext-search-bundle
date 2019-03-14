@@ -229,4 +229,21 @@ class Search
 
 		return isset($results) && $results && count($results) ? $results[0] : false;
 	}
+
+    /**
+     * @param string|null $indexName
+     * @return bool
+     */
+	public function isIndexAlive($indexName = null)
+    {
+        if (!$indexName) {
+            $indexName = $this->kernel->getContainer()->getParameter('symbio_fulltext_search.'.Crawler::DEFAULT_INDEX_PARAM);
+        }
+
+        try {
+            return $this->indexManager->isUpToDate($indexName);
+        } catch(\Exception $e) {
+            return false;
+        }
+    }
 }
