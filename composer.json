@@ -15,7 +15,7 @@
     "minimum-stability": "RC",
     "prefer-stable": true,
     "require": {
-        "fabpot/goutte": "~3.0",
+        "fabpot/goutte": "2.*",
         "egeloen/lucene-search-bundle": "^2.0",
         "kreatys/pdf-parser-bundle": "^0.1.0",
         "knplabs/knp-paginator-bundle": "~2.3"
