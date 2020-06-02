@@ -311,6 +311,7 @@ class Crawler {
 
         $client = new Client();
         $client->setHeader('User-Agent', $this->parameters['user_agent']);
+        $client->getClient()->setDefaultOption('config/curl/' . CURLOPT_SSL_VERIFYPEER, false);
 
         try {
             $crawler = $client->request('GET', $url);
